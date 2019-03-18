@@ -64,11 +64,10 @@ setup(
     name="bbidomain",
     version="{0}.{1}".format(MAJOR, MINOR),
     description="A collection of tools for volume and surface meshing",
-    long_description="",
     ext_modules=[CMakeExtension("bibidomain")],
     cmdclass=dict(build_ext=CMakeBuild),
     packages=["extension_modules"],
-    package_dir={"": "src"},
+    # package_dir={"": "src"},
     package_data={"extension_modules": ["include/*.h"]},
     zip_safe=False
 )
