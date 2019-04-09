@@ -6,6 +6,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
+#include <iostream>
+
 // dolfin headers
 #include <dolfin/la/PETScVector.h>
 
@@ -24,8 +26,9 @@ void axpy(vector_type &x, vector_type &y, const float_type a)
 }
 
 
-template< class CallableObjectType, class vector_type >
-void forward_euler(CallableObjectType rhs, vector_type &u, vector_type &u_prev,
+/* template< class CallableObjectType, class vector_type > */
+template< class vector_type >
+void forward_euler(Cressman &rhs, vector_type &u, vector_type &u_prev,
         const double t0, const double t1, const double dt)
 {
     auto t = t0;
@@ -50,19 +53,19 @@ typedef std::vector< double > ndarray;
 class OdeSolverVectorised
 {
     public:
-        OdeSolverVectorised(const ndarray &V_map, const ndarray &n_map, const ndarray &m_map,
+        OdeSolverVectorised(const ndarray &V_map, const ndarray &m_map, const ndarray &n_map,
             const ndarray &h_map, const ndarray &Ca_map, const ndarray &K_map, const ndarray &Na_map) :
             V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), Ca_map(Ca_map), K_map(K_map),
-            Na_map(Na_map)
+            Na_map(Na_map), rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.)
         {
-            // TODO: Why can't I do this under private?
-            /* Cressman rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.); */
+            //Cressman *rhs new Cressman(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.);
+            /* std::cout << "constructor called" << std::endl; */
         }
 
         void solve(PETScVector &state, const double t0, const double t1, const double dt)
         {
             // Why can't I have this somewhere else?
-            Cressman rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.);
+            /* Cressman rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.); */
 
             std::vector< double > u(7);
             std::vector< double > u_prev(7);
@@ -91,6 +94,8 @@ class OdeSolverVectorised
 
 
     private:
+        /* Cressman &rhs;// = new Cressman(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.); */
+        Cressman rhs;
         const ndarray V_map;
         const ndarray n_map;
         const ndarray m_map;

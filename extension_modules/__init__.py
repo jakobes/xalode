@@ -37,7 +37,13 @@ class ModuleCache:
         self._file_cache: Dict[str, Sequence[str]] = {}     # Cache file names for later compilation
         self._module_cache: Dict[str, "module"] = {}        # name: compiled module
 
-    def add_module(self, name: str, files: Sequence[str], compile: bool = False) -> None:
+    def add_module(
+            self,
+            name: str,
+            files: Sequence[str],
+            compile: bool = False,
+            verbose: bool = False
+    ) -> None:
         """Add fielanames under module `name`.
 
         Compile and cache module if `compile` is True.
@@ -45,9 +51,9 @@ class ModuleCache:
         self._file_cache[name] = files
 
         if compile:
-            self._module_cache = cpp_module(self._file_cache[name])
+            self._module_cache = cpp_module(self._file_cache[name], verbose=verbose)
 
-    def get_module(self, name: str, recompile: bool = False) -> "<class 'module'>":
+    def get_module(self, name: str, recompile: bool = False, verbose: bool = False) -> "<class 'module'>":
         """Return module `name`.
 
         (Re)compile the module if `recompile` is True.
@@ -56,7 +62,7 @@ class ModuleCache:
             assert False, "Could not find module {}".format(name)
 
         if recompile or name not in self._module_cache:
-            self._module_cache[name] = cpp_module(self._file_cache[name])
+            self._module_cache[name] = cpp_module(self._file_cache[name], verbose=verbose)
 
         return self._module_cache[name]
 
@@ -65,9 +71,9 @@ _MODULE_CACHE = ModuleCache()
 _MODULE_CACHE.add_module("forward_euler", ["cressman.h", "forward_euler.h"])
 
 
-def load_module(name: str, recompile: bool = False) -> "class< 'module'>":
+def load_module(name: str, recompile: bool = False, verbose: bool = False) -> "class< 'module'>":
     """Load module `name`."""
-    return _MODULE_CACHE.get_module(name, recompile)
+    return _MODULE_CACHE.get_module(name, recompile, verbose=verbose)
 
 
 if __name__ == "__main__":

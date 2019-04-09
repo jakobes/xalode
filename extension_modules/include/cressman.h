@@ -3,6 +3,7 @@
 
 
 #include <cmath>
+#include <iostream>
 
 
 class Cressman
@@ -26,12 +27,12 @@ class Cressman
             const double ENa = 26.64*log(Nao/x[6]);
             const double EK = 26.64*log(control*x[5]/Ki);
 
-            const double am = (0.1*x[0] + 3.0)/(-exp(-0.1*x[0] - 3) + 1);
+            const double am = (0.1*x[0] + 3.0)/(1 - exp(-0.1*x[0] - 3));
             const double bm = 4*exp(-1./18.*x[0] - 55./18.);
-            const double ah = 0.07*exp(-0.05*x[0] - 2.2);
-            const double bh = 1.0/(exp(-0.1*x[0] - 1.4) + 1);
             const double an = (0.01*x[0] + 0.34)/(-exp(-0.1*x[0] - 3.4) + 1);
             const double bn = 0.125*exp(-0.0125*x[0] - 0.55);
+            const double ah = 0.07*exp(-0.05*x[0] - 2.2);
+            const double bh = 1.0/(exp(-0.1*x[0] - 1.4) + 1);
 
             const double taum = 1./(am + bm);
             const double minf = 1./(am + bm)*am;
