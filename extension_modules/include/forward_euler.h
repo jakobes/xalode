@@ -26,19 +26,16 @@ void axpy(vector_type &x, vector_type &y, const float_type a)
 }
 
 
-/* template< class CallableObjectType, class vector_type > */
-template< class vector_type >
-void forward_euler(Cressman &rhs, vector_type &u, vector_type &u_prev,
+/* template< class vector_type > */
+template< class CallableObjectType, class vector_type >
+void forward_euler(CallableObjectType &rhs, vector_type &u, vector_type &u_prev,
         const double t0, const double t1, const double dt)
 {
     auto t = t0;
     while (t < t1)
     {
         rhs(u_prev, u, t);         // u = rhs(u_prev, t)
-        axpy(u, u_prev, dt);       // u = dt*u + u_prev     FIXME: I don''t think this is called axpy
-
-        /* u *= dt;                // u = dt*rhs(u_prev, t) */
-        /* u += u_prev;            // u = u_prev + dt*rhs(u_prev, t) */
+        axpy(u, u_prev, dt);       // u = dt*u + u_prev
 
         u_prev = u;
         t += dt;
@@ -46,7 +43,6 @@ void forward_euler(Cressman &rhs, vector_type &u, vector_type &u_prev,
 }
 
 
-/* typedef py::array_t< double > ndarray; //TODO: Add buffer protocol to constructor */
 typedef std::vector< double > ndarray;
 
 
@@ -56,22 +52,23 @@ class OdeSolverVectorised
         OdeSolverVectorised(const ndarray &V_map, const ndarray &m_map, const ndarray &n_map,
             const ndarray &h_map, const ndarray &Ca_map, const ndarray &K_map, const ndarray &Na_map) :
             V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), Ca_map(Ca_map), K_map(K_map),
-            Na_map(Na_map), rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.)
-        {
-            //Cressman *rhs new Cressman(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.);
-            /* std::cout << "constructor called" << std::endl; */
-        }
+            Na_map(Na_map), mask_vector(V_map.size(), 1), rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 4., 0.0445, 1000, 1.)
+        { } // NB: Cressman Kinf = 4!
+
+        OdeSolverVectorised(const ndarray &V_map, const ndarray &m_map, const ndarray &n_map,
+            const ndarray &h_map, const ndarray &Ca_map, const ndarray &K_map, const ndarray &Na_map,
+            const std::vector< int8_t > &mask_vector):
+            V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), Ca_map(Ca_map), K_map(K_map),
+            Na_map(Na_map), mask_vector(mask_vector),
+            rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 4., 0.0445, 1000, 1.)
+        { } // NB: Cressman Kinf = 4!
 
         void solve(PETScVector &state, const double t0, const double t1, const double dt)
         {
-            // Why can't I have this somewhere else?
-            /* Cressman rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.); */
-
-            std::vector< double > u(7);
-            std::vector< double > u_prev(7);
-
             for (size_t i = 0; i < V_map.size(); ++i)
             {
+                if (!mask_vector[i])  // Only solve ODE if mask[i] == true;
+                    continue;
                 u_prev[0] = state[V_map[i]];
                 u_prev[1] = state[m_map[i]];
                 u_prev[2] = state[n_map[i]];
@@ -94,7 +91,6 @@ class OdeSolverVectorised
 
 
     private:
-        /* Cressman &rhs;// = new Cressman(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.); */
         Cressman rhs;
         const ndarray V_map;
         const ndarray n_map;
@@ -103,44 +99,20 @@ class OdeSolverVectorised
         const ndarray Ca_map;
         const ndarray K_map;
         const ndarray Na_map;
+        const std::vector< int8_t > mask_vector;
+        std::array< double, 7 > u;
+        std::array< double, 7 > u_prev;
 };
 
 
-void solve_all(PETScVector &V, PETScVector &m, PETScVector &n, PETScVector &h, PETScVector &Ca,
-        PETScVector &K, PETScVector &Na, const double t0, const double t1, const double dt)
-{
-    Cressman rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 8., 0.0445, 1000, 1.);
-    std::vector< double > u(7);
-    std::vector< double > u_prev(7);
-
-    for (size_t i = 0; i < V.size(); ++i)
-    {
-        u_prev[0] = V[i];
-        u_prev[1] = m[i];
-        u_prev[2] = n[i];
-        u_prev[3] = h[i];
-        u_prev[4] = Ca[i];
-        u_prev[5] = K[i];
-        u_prev[6] = Na[i];
-
-        forward_euler(rhs, u, u_prev, t0, t1, dt);
-        VecSetValue(V.vec(), i, u[0], INSERT_VALUES);
-        VecSetValue(m.vec(), i, u[1], INSERT_VALUES);
-        VecSetValue(n.vec(), i, u[2], INSERT_VALUES);
-        VecSetValue(h.vec(), i, u[3], INSERT_VALUES);
-        VecSetValue(Ca.vec(), i, u[4], INSERT_VALUES);
-        VecSetValue(K.vec(), i, u[5], INSERT_VALUES);
-        VecSetValue(Na.vec(), i, u[6], INSERT_VALUES);
-    }
-}
-
-
 PYBIND11_MODULE(SIGNATURE, m) {
-    m.def("ode_solve", &solve_all);
+    /* m.def("ode_solve", &solve_all); */
 
     py::class_<OdeSolverVectorised>(m, "OdeSolverVectorised")
         .def(py::init< const ndarray &, const ndarray &, const ndarray &, const ndarray &, const ndarray &,
                 const ndarray &, const ndarray & >())
+        .def(py::init< const ndarray &, const ndarray &, const ndarray &, const ndarray &, const ndarray &,
+                const ndarray &, const ndarray &, const std::vector< int8_t > & >())
         .def("solve", &OdeSolverVectorised::solve);
 }
 
