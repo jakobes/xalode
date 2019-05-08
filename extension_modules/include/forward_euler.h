@@ -53,7 +53,7 @@ class OdeSolverVectorised
             const ndarray &h_map, const ndarray &Ca_map, const ndarray &K_map, const ndarray &Na_map) :
             V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), Ca_map(Ca_map), K_map(K_map),
             Na_map(Na_map), mask_vector(V_map.size(), 1), rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 4., 0.0445, 1000, 1.)
-        { } // NB: Cressman Kinf = 4!
+        { }
 
         OdeSolverVectorised(const ndarray &V_map, const ndarray &m_map, const ndarray &n_map,
             const ndarray &h_map, const ndarray &Ca_map, const ndarray &K_map, const ndarray &Na_map,
@@ -61,7 +61,7 @@ class OdeSolverVectorised
             V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), Ca_map(Ca_map), K_map(K_map),
             Na_map(Na_map), mask_vector(mask_vector),
             rhs(1., 100., 40., 0.01, 0.05, 0.0175, 0.05, 0.1, 66, 4., 0.0445, 1000, 1.)
-        { } // NB: Cressman Kinf = 4!
+        { }
 
         void solve(PETScVector &state, const double t0, const double t1, const double dt)
         {
@@ -88,7 +88,6 @@ class OdeSolverVectorised
                 VecSetValue(state.vec(), Na_map[i], u[6], INSERT_VALUES);
             }
         }
-
 
     private:
         Cressman rhs;

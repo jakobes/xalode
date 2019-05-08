@@ -68,7 +68,8 @@ class ModuleCache:
 
 
 _MODULE_CACHE = ModuleCache()
-_MODULE_CACHE.add_module("forward_euler", ["cressman.h", "forward_euler.h"])
+_MODULE_CACHE.add_module("Cressman", ["cressman.h"])
+_MODULE_CACHE.add_module("Noble", ["noble.h"])
 
 
 def load_module(name: str, recompile: bool = False, verbose: bool = False) -> "class< 'module'>":
