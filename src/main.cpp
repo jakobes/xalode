@@ -18,7 +18,7 @@ namespace py = pybind11;
 
 
 PYBIND11_MAKE_OPAQUE(std::vector< double >);
-PYBIND11_MAKE_OPAQUE(std::vector< int8_t >);
+PYBIND11_MAKE_OPAQUE(std::vector< int >);
 
 
 template<typename T>
@@ -31,8 +31,8 @@ PYBIND11_MODULE(bbidomain, m) {
     py::bind_vector< std::vector< double > >(m, "VectorDouble", py::buffer_protocol())
         .def_buffer(&vector_buffer< double >);
 
-    py::bind_vector< std::vector< int8_t > >(m, "VectorBool", py::buffer_protocol())
-        .def_buffer(&vector_buffer< int8_t >);
+    py::bind_vector< std::vector< int > >(m, "VectorInt", py::buffer_protocol())
+        .def_buffer(&vector_buffer< int >);
 
     m.def("cressman_FE", &cressman_FE< std::vector< double > >);
     m.def("modular_forward_euler", &modular_forward_euler< std::vector< double > >);
