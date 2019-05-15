@@ -1,17 +1,8 @@
 #include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-
+#include <pybind11/numpy.h>         // TODO: remove?
 #include <pybind11/stl_bind.h>
-/* #include <pybind11/stl.h> */
-/* #include <pybind11/functional.h> */
-
-#include "cressman.h"
-#include "forward_euler.h"
-#include "modular.h"
 
 #include <vector>
-
-#include <armadillo>
 
 
 namespace py = pybind11;
@@ -35,8 +26,4 @@ PYBIND11_MODULE(xalode, m) {
 
     py::bind_vector< std::vector< int > >(m, "VectorInt", py::buffer_protocol())
         .def_buffer(&vector_buffer< int >);
-
-    // TODO: I don't think I need these
-    m.def("cressman_FE", &cressman_FE< std::vector< double > >);
-    m.def("modular_forward_euler", &modular_forward_euler< std::vector< double > >);
 }
