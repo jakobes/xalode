@@ -101,13 +101,7 @@ class ODESolverVectorised
     public:
         ODESolverVectorised(const ndarray &V_map, const ndarray &m_map, const ndarray &n_map,
             const ndarray &h_map):
-            V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), mask_vector(V_map.size(), 1),
-            rhs(12.0, 400, 1.2, 0.1845, 1.2)
-        { }
-
-        ODESolverVectorised(const ndarray &V_map, const ndarray &m_map, const ndarray &n_map,
-            const ndarray &h_map, const std::vector< int8_t > &mask_vector):
-            V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map), mask_vector(mask_vector),
+            V_map(V_map), n_map(n_map), m_map(m_map), h_map(h_map),
             rhs(12.0, 400, 1.2, 0.1845, 1.2)
         { }
 
@@ -115,8 +109,6 @@ class ODESolverVectorised
         {
             for (size_t i = 0; i < V_map.size(); ++i)
             {
-                if (!mask_vector[i])  // Only solve ODE if mask[i] == true;
-                    continue;
                 u_prev[0] = state[V_map[i]];
                 u_prev[1] = state[m_map[i]];
                 u_prev[2] = state[n_map[i]];
@@ -137,17 +129,14 @@ class ODESolverVectorised
         const ndarray n_map;
         const ndarray m_map;
         const ndarray h_map;
-        const std::vector< int8_t > mask_vector;
         std::array< double, 4 > u;
         std::array< double, 4 > u_prev;
 };
 
 
 PYBIND11_MODULE(SIGNATURE, m) {
-    py::class_<ODESolverVectorised>(m, "BetterODESolver")
+    py::class_< ODESolverVectorised >(m, "LatticeODESolver")
         .def(py::init< const ndarray &, const ndarray &, const ndarray &, const ndarray & >())
-        .def(py::init< const ndarray &, const ndarray &, const ndarray &, const ndarray &,
-                const std::vector< int8_t > & >())
         .def("solve", &ODESolverVectorised::solve);
 }
 

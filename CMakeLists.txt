@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(bbidomain)
+project(xalode)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,4 +19,4 @@ set(PYBIND11_PYTHON_VERSION 3.6)
 
 set(CMAKE_CXX_FLAGS "-fPIC -shared ${CMAKE_CXX_FLAGS} -O3") # -std=c++17
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-pybind11_add_module(bbidomain SHARED src/main.cpp)
+pybind11_add_module(xalode SHARED src/main.cpp)

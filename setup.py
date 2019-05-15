@@ -29,7 +29,7 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def run(self):
         try:
-            _ = subprocess.check_output(["cmake", "--version"])
+            subprocess.check_output(["cmake", "--version"])
         except OSError:
             names = ", ".join(e.name for e in self.extensions)
             msg = "CMake must be installed to build the following extensions: {names}".format(names=names)
@@ -61,10 +61,10 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    name="bbidomain",
+    name="xalode",
     version="{0}.{1}".format(MAJOR, MINOR),
     description="A collection of tools for volume and surface meshing",
-    ext_modules=[CMakeExtension("bibidomain")],
+    ext_modules=[CMakeExtension("xalode")],
     cmdclass=dict(build_ext=CMakeBuild),
     packages=["extension_modules"],
     # package_dir={"": "src"},
