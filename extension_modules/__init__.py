@@ -3,10 +3,6 @@ from dolfin import compile_cpp_code
 from typing import Dict, Sequence
 
 
-rhs_header = "cressman.h"
-solver_header = "forward_euler.h"
-
-
 def cpp_module(
         header_names: Sequence[str],
         include_dir: str = "include",
@@ -68,7 +64,7 @@ class ModuleCache:
 
 
 _MODULE_CACHE = ModuleCache()
-_MODULE_CACHE.add_module("Cressman", ["cressman.h"])
+_MODULE_CACHE.add_module("Cressman", ["vectorised_cressman.h"])
 _MODULE_CACHE.add_module("Noble", ["noble.h"])
 
 
