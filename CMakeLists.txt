@@ -30,6 +30,7 @@ pybind11_add_module(xalode SHARED src/main.cpp)
 set(install_headers
     ${SOURCE_DIR}/cressman.h
     ${SOURCE_DIR}/forward_euler.h
+    ${SOURCE_DIR}/utils.h
     )
 
 set(include_dest "include/xalode")

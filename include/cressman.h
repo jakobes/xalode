@@ -10,18 +10,18 @@ class Cressman
 {
     public:
         Cressman(
-                const double Koinf = 4.0,
-                const double Cm = 1.0,
-                const double GNa = 100.0,
-                const double GK = 40.0,
-                const double GAHP = 0.01,
-                const double GKL = 0.05,
-                const double GNaL = 0.0175,
-                const double GClL = 0.05,
-                const double GCa = 0.1,
-                const double Gglia = 66.0,
-                const double gamma1 = 0.0554,
-                const double tau = 1000.0) :
+                double Koinf = 4.0,
+                double Cm = 1.0,
+                double GNa = 100.0,
+                double GK = 40.0,
+                double GAHP = 0.01,
+                double GKL = 0.05,
+                double GNaL = 0.0175,
+                double GClL = 0.05,
+                double GCa = 0.1,
+                double Gglia = 66.0,
+                double gamma1 = 0.0554,
+                double tau = 1000.0) :
             Koinf(Koinf),
             Cm(Cm),
             GNa(GNa),
@@ -74,28 +74,28 @@ class Cressman
         }
 
     private:
-        const double rho = 1.25;
-        const double eps0 = 1.2;
-        const double beta0 = 7.0;
-        const double ECa = 120.0;
-        const double Cli = 6.0;
-        const double Clo = 130.0;
-        const double ECl = 26.64*log(Cli/Clo);
-        const double phi = 3.0;
+        double rho = 1.25;
+        double eps0 = 1.2;
+        double beta0 = 7.0;
+        double ECa = 120.0;
+        double Cli = 6.0;
+        double Clo = 130.0;
+        double ECl = 26.64*log(Cli/Clo);
+        double phi = 3.0;
 
         // Set through the constructor
-        const double Cm;
-        const double GNa;
-        const double GK;
-        const double GAHP;
-        const double GKL;
-        const double GNaL;
-        const double GClL;
-        const double GCa;
-        const double Gglia;
-        const double Koinf;
-        const double gamma1;
-        const double tau;
+        double Cm;
+        double GNa;
+        double GK;
+        double GAHP;
+        double GKL;
+        double GNaL;
+        double GClL;
+        double GCa;
+        double Gglia;
+        double Koinf;
+        double gamma1;
+        double tau;
 };
 
 
