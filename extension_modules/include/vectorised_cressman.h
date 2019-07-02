@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 #include <cstdio>
+#include <algorithm>       // std::find
 /* #include <memory>       // unique_ptr */
 
 // pybind headers
@@ -15,6 +16,8 @@
 
 // dolfin headers
 #include <dolfin/la/PETScVector.h>
+#include <dolfin/fem/DofMap.h>
+#include <dolfin/mesh/MeshFunction.h>
 
 // xalode headers
 #include "xalode/cressman.h"
@@ -165,6 +168,24 @@ class ODESolverVectorisedSubDomain
 };
 
 
+std::vector< int > filter_dofs(DofMap &dofmap, MeshFunction< size_t > &cell_function, std::vector< int > &cell_tags)
+{
+    std::vector< int > filtered_dofs;
+
+    for (size_t cell_id = 0; cell_id < cell_function.size(); ++cell_id)
+    {
+        auto cell_dofs = dofmap.cell_dofs(cell_id);
+        if (std::find(cell_tags.begin(), cell_tags.end(), cell_function[cell_id]) != cell_tags.end())
+        {
+            for (int i = 0; i < cell_dofs.rows(); ++i)
+                filtered_dofs.emplace_back(cell_dofs.data()[i]);
+        }
+    }
+    filtered_dofs.erase(uniquify(filtered_dofs.begin(), filtered_dofs.end()), filtered_dofs.end());
+    return filtered_dofs;
+}
+
+
 PYBIND11_MODULE(SIGNATURE, m) {
     py::class_< ODESolverVectorised >(m, "LatticeODESolver")
         .def(py::init< const ndarray &, const ndarray &, const ndarray &, const ndarray &, const ndarray &,
@@ -174,11 +195,12 @@ PYBIND11_MODULE(SIGNATURE, m) {
         .def(py::init< const ndarray &, const ndarray &, const ndarray &, const ndarray &, const ndarray &,
                 const ndarray &, const ndarray &, const ndarray &, std::map< int, double > & >())
         .def("solve", &ODESolverVectorisedSubDomain::solve);
+
+    m.def("filter_dofs", &filter_dofs);
 }
 
 
 }   // namespace dolfin
-
 
 
 #endif

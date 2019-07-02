@@ -1,10 +1,6 @@
 #ifndef FORWARD_EULER_H
 #define FORWARD_EULER_H
 
-// stl
-#include <cmath>
-#include <iostream>
-
 
 template< class vector_type, typename float_type = typename vector_type::value_type >
 void axpy(vector_type &x, vector_type &y, const float_type a)
