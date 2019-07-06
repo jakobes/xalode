@@ -25,6 +25,8 @@
 #include "xalode/forward_euler.h"
 #include "xalode/utils.h"
 
+#include <dolfin/log/log.h>
+
 namespace py = pybind11;
 
 namespace dolfin
@@ -129,20 +131,50 @@ class ODESolverVectorisedSubDomain
             cell_function(cell_function),
             parameter_map(parameter_map)
         {
+            // vector of the cell tags in `parameter_map`.
             std::vector< int > cell_tags(parameter_map.size());
+
+            // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
             for (auto &kv : parameter_map)
             {
                 rhs_map[kv.first] = Cressman(kv.second);
                 cell_tags.emplace_back(kv.first);
             }
 
+            // Create a vertex function from the cell function. Where there are conflicts,
+            // NB! The highest numerical value takes precedence
+            vertex_function = MeshFunction< size_t >(mixed_function_space.mesh(), 0);
+            vertex_function.set_all(0);
+
+            const auto mesh = mixed_function_space.mesh();
+            const auto tdim = mesh.get()->topology().dim();
+            const auto cell_vertex_count = mesh.get()->type().num_vertices(tdim);
+            const auto num_cells = mesh.get()->topology().size(tdim);
+
+            for (size_t cell_number = 0; cell_number < num_cells; ++cell_number)
+            {
+                auto value = cell_function[cell_number];
+                if (value != 0)
+                    for (size_t cell_vertex = 0; cell_vertex < cell_vertex_count; ++cell_vertex)
+                    {
+                        auto vf_index = mesh.get()->cells()[cell_number*cell_vertex_count + cell_vertex];
+                        if (value > vertex_function[vf_index])
+                            vertex_function.set_value(vf_index, value);
+                    }
+            }
+            for (size_t i = 0; i < vertex_function.size(); i++)
+            {
+                if (vertex_function[i] != 0 && vertex_function[i] != 3)
+                    std::cout << vertex_function[i] << std::endl;
+            }
+
+
             const auto num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
             for (size_t i = 0; i < num_sub_spaces; ++i)
             {
                 subdomain_maps.emplace_back(filter_dofs(
                             *(mixed_function_space.sub(i).get()->dofmap().get()),
-                            cell_function,
-                            cell_tags));
+                            cell_function, cell_tags));
             }
             /*
              * I am now where I was. the next question is to map the dofs to a subdomain
@@ -161,8 +193,9 @@ class ODESolverVectorisedSubDomain
 
     private:
         const FunctionSpace &mixed_function_space;
-        const MeshFunction< size_t > &cell_function;
+        const MeshFunction< size_t > cell_function;
         const std::map< int, float > &parameter_map;
+        MeshFunction< size_t > vertex_function;
         std::map< int, Cressman > rhs_map;
         std::vector< std::vector< int > > subdomain_maps;
 
