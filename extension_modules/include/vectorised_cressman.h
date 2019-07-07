@@ -58,6 +58,31 @@ std::vector< int > filter_dofs(
 }
 
 
+MeshFunction< size_t > cell_to_vertex(const MeshFunction< size_t > &cell_function)
+{
+    const auto mesh = cell_function.mesh();
+    const auto tdim = mesh.get()->topology().dim();
+    const auto cell_vertex_count = mesh.get()->type().num_vertices(tdim);
+    const auto num_cells = mesh.get()->topology().size(tdim);
+
+    auto vertex_function = MeshFunction< size_t >(mesh, 0);
+    vertex_function.set_all(0);
+
+    for (size_t cell_number = 0; cell_number < num_cells; ++cell_number)
+    {
+        auto value = cell_function[cell_number];
+        if (value != 0)
+            for (size_t cell_vertex = 0; cell_vertex < cell_vertex_count; ++cell_vertex)
+            {
+                auto vf_index = mesh.get()->cells()[cell_number*cell_vertex_count + cell_vertex];
+                if (value > vertex_function[vf_index])
+                    vertex_function.set_value(vf_index, value);
+            }
+    }
+    return vertex_function;
+}
+
+
 class ODESolverVectorised
 {
     public:
@@ -143,32 +168,9 @@ class ODESolverVectorisedSubDomain
 
             // Create a vertex function from the cell function. Where there are conflicts,
             // NB! The highest numerical value takes precedence
-            vertex_function = MeshFunction< size_t >(mixed_function_space.mesh(), 0);
-            vertex_function.set_all(0);
+            vertex_function = cell_to_vertex(cell_function);
 
-            const auto mesh = mixed_function_space.mesh();
-            const auto tdim = mesh.get()->topology().dim();
-            const auto cell_vertex_count = mesh.get()->type().num_vertices(tdim);
-            const auto num_cells = mesh.get()->topology().size(tdim);
-
-            for (size_t cell_number = 0; cell_number < num_cells; ++cell_number)
-            {
-                auto value = cell_function[cell_number];
-                if (value != 0)
-                    for (size_t cell_vertex = 0; cell_vertex < cell_vertex_count; ++cell_vertex)
-                    {
-                        auto vf_index = mesh.get()->cells()[cell_number*cell_vertex_count + cell_vertex];
-                        if (value > vertex_function[vf_index])
-                            vertex_function.set_value(vf_index, value);
-                    }
-            }
-            for (size_t i = 0; i < vertex_function.size(); i++)
-            {
-                if (vertex_function[i] != 0 && vertex_function[i] != 3)
-                    std::cout << vertex_function[i] << std::endl;
-            }
-
-
+            // create a vector of dofmaps. One for each sub space (i.e. variable)
             const auto num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
             for (size_t i = 0; i < num_sub_spaces; ++i)
             {
@@ -176,20 +178,24 @@ class ODESolverVectorisedSubDomain
                             *(mixed_function_space.sub(i).get()->dofmap().get()),
                             cell_function, cell_tags));
             }
-            /*
-             * I am now where I was. the next question is to map the dofs to a subdomain
-             * value. This means I need an associaton between the dofs and a value. I
-             * think a vector is the way to go. The only way I can think of is to make the
-             * dofmaps and the map to the cell function simultaneously. I can hacky away
-             * with a static offset in the dofmap when solving the ODE. I should make a
-             * new filter function that takes a shared pointer dof map and the cell
-             * function and returns a std::vector< pair< dof, cell function value > >.
-             * That should be straight forward.
-             *
-             * TODO: I need a dof to cell map. How can I get this?
-             * */
-
         } // I should have some kind of checks. Better do on python side.
+
+        void solve(PETScVector &state, const double t0, const double t1, const double dt)
+        {
+            for (size_t vertex_counter = 0; vertex_counter < vertex_function.size(); ++vertex_counter)
+            {
+                for (size_t state_counter = 0; state_counter < subdomain_maps.size(); state_counter++)
+                {
+                    u_prev[state_counter] = state[subdomain_maps[state_counter][vertex_counter]];
+
+                    forward_euler(rhs_map[vertex_function[vertex_counter]], u, u_prev, t0, t1, dt);
+
+                    VecSetValue(state.vec(), subdomain_maps[state_counter][vertex_counter],
+                            u[state_counter], INSERT_VALUES);
+                }
+            }
+        }
+
 
     private:
         const FunctionSpace &mixed_function_space;
@@ -198,6 +204,10 @@ class ODESolverVectorisedSubDomain
         MeshFunction< size_t > vertex_function;
         std::map< int, Cressman > rhs_map;
         std::vector< std::vector< int > > subdomain_maps;
+
+        // How can I infer 7 compile time?
+        std::array< double, 7 > u;
+        std::array< double, 7 > u_prev;
 
 };
 
@@ -221,6 +231,7 @@ PYBIND11_MODULE(SIGNATURE, m) {
         /* .def("solve", &ODESolverVectorisedSubDomain::solve); */
 
     m.def("filter_dofs", &filter_dofs);
+    m.def("cell_to_vertex", &cell_to_vertex);
 }
 
 
