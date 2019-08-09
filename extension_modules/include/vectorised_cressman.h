@@ -281,14 +281,6 @@ class ODESolverVectorisedSubDomain
             // tag state_dof_map will have length 7 for all keys
             // the innermost vectors (dofs) for all 7 will have the same length
 
-            /* for (const auto &kv: tag_state_dof_map) */
-            /* { */
-            /*     std::cout << "ct: " << kv.first << std::endl; */
-            /*     std::cout << "size: " << kv.second.size() << std::endl; */
-            /*     for (auto foobar: kv.second) */
-            /*         std::cout << foobar.size() << std::endl; */
-            /* } */
-
         } // I should have some kind of checks. Better do on python side.
 
         void solve(PETScVector &state, const double t0, const double t1, const double dt)
