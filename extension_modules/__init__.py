@@ -20,7 +20,10 @@ def cpp_module(
     if verbose:
         print(cpp_code)
 
-    module = compile_cpp_code(cpp_code)
+    module = compile_cpp_code(
+        cpp_code,
+        include_dirs=None
+    )
     assert module is not None
     return module
 

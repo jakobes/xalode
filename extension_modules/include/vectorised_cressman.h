@@ -22,6 +22,9 @@
 #include <dolfin/mesh/MeshFunction.h>
 #include <dolfin/function/FunctionSpace.h>
 
+// ODEINT
+#include <boost/numeric/odeint.hpp>
+
 // xalode headers
 #include "xalode/cressman.h"
 #include "xalode/forward_euler.h"
@@ -301,13 +304,13 @@ class ODESolverVectorisedSubDomain
                         u_prev[state_counter] = state[kv.second[state_counter][dof_counter]];
                     }
 
-                    forward_euler(rhs_map[kv.first], u, u_prev, t0, t1, dt);
+                    forward_euler(stepper, rhs_map[kv.first], u_prev, t0, t1, dt);
 
-                    // Fill values from `u` into `u_prev`.
+                    // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
                     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
                     {
                         VecSetValue(state.vec(), kv.second[state_counter][dof_counter],
-                                u[state_counter], INSERT_VALUES);
+                                u_prev[state_counter], INSERT_VALUES);
                     }
                 }
             }
@@ -320,6 +323,9 @@ class ODESolverVectorisedSubDomain
 
         // cell_tag -> state variables -> dofs
         std::map< int, std::vector< std::vector < size_t > > > tag_state_dof_map;
+
+        // Ode stepper
+        modified_midpoint< vector_type > const_stepper;
 };
 
 
