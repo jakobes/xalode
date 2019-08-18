@@ -39,7 +39,7 @@ void forward_euler(
 
 template< class controlled_stepper, class callable_object_type, class vector_type >
 size_t forward_euler(
-        controlled_stepper stepper&,
+        controlled_stepper &stepper,
         callable_object_type &rhs,
         vector_type &state,
         const double t0,
@@ -53,14 +53,13 @@ size_t forward_euler(
 
 template< class stepper_type, class callable_object_type, class vector_type >
 void forward_euler(
-        stepper_type stepper&,
+        stepper_type &stepper,
         callable_object_type &rhs,
         vector_type &state,
         const double t0,
         const double t1,
         const double dt)
 {
-    const double dt = 1;     // time step of observer calls
     integrate_const(stepper, rhs, state, t0, t1, dt);
 }
 

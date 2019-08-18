@@ -22,7 +22,7 @@ def cpp_module(
 
     module = compile_cpp_code(
         cpp_code,
-        include_dirs=None
+        include_dirs=[]
     )
     assert module is not None
     return module

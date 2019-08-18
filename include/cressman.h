@@ -84,6 +84,7 @@ class Cressman
         double phi = 3.0;
 
         // Set through the constructor
+        double Koinf;
         double Cm;
         double GNa;
         double GK;
@@ -93,7 +94,6 @@ class Cressman
         double GClL;
         double GCa;
         double Gglia;
-        double Koinf;
         double gamma1;
         double tau;
 };
