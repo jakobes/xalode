@@ -1,9 +1,15 @@
 #ifndef FORWARD_EULER_H
 #define FORWARD_EULER_H
 
+// stl
+#include <memory>       // shared pointer
 
 // ODEINT
 #include <boost/numeric/odeint.hpp>
+
+// xalode
+#include "xalode/odebase.h"
+
 
 using namespace boost::numeric::odeint;
 
@@ -51,16 +57,17 @@ size_t forward_euler(
 }
 
 
-template< class stepper_type, class callable_object_type, class vector_type >
+template< class stepper_type, class vector_type >
 void forward_euler(
         stepper_type &stepper,
-        callable_object_type &rhs,
+        std::shared_ptr< ODEBase > &rhs,
         vector_type &state,
         const double t0,
         const double t1,
         const double dt)
 {
-    integrate_const(stepper, rhs, state, t0, t1, dt);
+    integrate_const(stepper, *(rhs.get()), state, t0, t1, dt);
 }
+
 
 #endif

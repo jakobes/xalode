@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#include <pybind11/operators.h>
 
 // dolfin headers
 #include <dolfin/la/PETScVector.h>
@@ -27,8 +28,10 @@
 
 // xalode headers
 #include "xalode/cressman.h"
+#include "xalode/fitzhugh.h"
 #include "xalode/forward_euler.h"
 #include "xalode/utils.h"
+#include "xalode/odebase.h"
 
 #include <dolfin/log/log.h>
 
@@ -41,6 +44,25 @@ namespace dolfin
 typedef std::vector< int > ndarray;
 typedef std::map< int, std::vector< double > > vertex_vector_map;
 typedef std::map< int, std::set< size_t > > index_map;
+
+
+class ODEMap
+{
+    public:
+        template <typename ode_type >
+        void add_ode(int key, ode_type &ode)
+        {
+            ode_map[key] = std::make_shared< ODEBase >(ode);
+        }
+
+        std::map< int, std::shared_ptr< ODEBase > > get_map()
+        {
+            return ode_map;
+        }
+
+    private:
+        std::map< int, std::shared_ptr< ODEBase > > ode_map;
+};
 
 
 index_map new_and_improved_dof_filter(
@@ -249,18 +271,16 @@ class ODESolverVectorisedSubDomain
         ODESolverVectorisedSubDomain(
                 const FunctionSpace &mixed_function_space,
                 const MeshFunction< size_t > &cell_function,
-                const std::map< int, float > &parameter_map)
+                ODEMap &ode_map)
         {
             num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
             // vector of the cell tags in `parameter_map`.
             std::vector< int > cell_tags {};
+            rhs_map = ode_map.get_map();
 
             // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
-            for (auto &kv : parameter_map)
-            {
-                rhs_map[kv.first] = Cressman(kv.second);
+            for (auto &kv : ode_map.get_map())
                 cell_tags.emplace_back(kv.first);
-            }
 
             for (int ct: cell_tags)
             {
@@ -318,7 +338,7 @@ class ODESolverVectorisedSubDomain
 
     private:
         MeshFunction< size_t > vertex_function;
-        std::map< int, Cressman > rhs_map;
+        std::map< int, std::shared_ptr< ODEBase > > rhs_map;
         int num_sub_spaces;
 
         // cell_tag -> state variables -> dofs
@@ -330,6 +350,11 @@ class ODESolverVectorisedSubDomain
 
 
 PYBIND11_MODULE(SIGNATURE, m) {
+    py::class_< ODEMap >(m, "ODEMap")
+        .def(py::init< >())
+        .def("add_ode", &ODEMap::add_ode< Cressman >)
+        .def("add_ode", &ODEMap::add_ode< Fitzhugh >);
+
     py::class_< ODESolverVectorised >(m, "LatticeODESolver")
         .def(py::init<
                 const ndarray &,
@@ -344,8 +369,38 @@ PYBIND11_MODULE(SIGNATURE, m) {
         .def(py::init<
                 const FunctionSpace &,
                 const MeshFunction< size_t > &,
-                const std::map< int, float > & >())
+                ODEMap & >())
         .def("solve", &ODESolverVectorisedSubDomain::solve);
+
+    py::class_< Cressman, std::shared_ptr< Cressman > > cressman(m, "Cressman", py::multiple_inheritance());
+        cressman
+            .def(py::init<double, double, double, double,
+                          double, double, double, double,
+                          double, double, double, double>(),
+                        py::arg("Kbath") = 4.0,
+                        py::arg("Cm") = 1.0,
+                        py::arg("GNa") = 100.0,
+                        py::arg("GK") = 40.0,
+                        py::arg("GAHP") = 0.01,
+                        py::arg("GKL") = 0.05,
+                        py::arg("GNaL") = 0.0175,
+                        py::arg("GClL") = 0.05,
+                        py::arg("GCa") = 0.1,
+                        py::arg("Gglia") = 66.0,
+                        py::arg("gamma1") = 0.0554,
+                        py::arg("tau") = 1000.0);
+            /* .def("__call__", &Cressman::operator(), py::is_operator()); */
+
+    py::class_< Fitzhugh, std::shared_ptr< Fitzhugh > >(m, "Fitzhugh", py::multiple_inheritance())
+        .def(py::init<double, double, double, double, double, double, double >(),
+                        py::arg("a") = 0.13,
+                        py::arg("b") = 13.0,
+                        py::arg("c1") = 0.26,
+                        py::arg("c2") = 10.0,
+                        py::arg("c3") = 1.0,
+                        py::arg("v_rest") = -70.0,
+                        py::arg("v_peak") = 40);
+        /* .def("__call__", &Cressman::operator()); */
 
     m.def("filter_dofs", &filter_dofs);
     m.def("cell_to_vertex", &cell_to_vertex);

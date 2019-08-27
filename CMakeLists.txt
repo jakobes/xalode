@@ -8,9 +8,6 @@ set(CMAKE_BUILD_TYPE RELEASE)
 # Boost
 find_package(Boost REQUIRED)
 
-# Armadillo
-find_package(Armadillo REQUIRED)
-
 # pybin11
 add_subdirectory(external/pybind11)
 
@@ -24,13 +21,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 pybind11_add_module(xalode SHARED src/main.cpp)
 
 # Install headers for use with fenics
-# add_library(xalode INTERFACE)
-# target_include_directories(xalode INTERFACE ${SOURCE_DIR})
 
 set(install_headers
     ${SOURCE_DIR}/cressman.h
     ${SOURCE_DIR}/forward_euler.h
     ${SOURCE_DIR}/utils.h
+    ${SOURCE_DIR}/fitzhugh.h
+    ${SOURCE_DIR}/odebase.h
     )
 
 set(include_dest "include/xalode")

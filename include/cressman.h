@@ -4,9 +4,18 @@
 // stl
 #include <cmath>
 #include <iostream>
+#include <memory.h>     // Enable_shared_from_this
+
+// pybind headers
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+
+// local headers
+#include "odebase.h"
 
 
-class Cressman
+class Cressman : public ODEBase, public std::enable_shared_from_this< Cressman >
 {
     public:
         Cressman(
@@ -36,7 +45,8 @@ class Cressman
             tau(tau) { }
 
         template< class vector_type >
-        void operator() (const vector_type &x, vector_type &dxdt, const double /* t */ ) {
+        void operator() (const vector_type &x, vector_type &dxdt, const double /* t */ )
+        {
             const double Ipump = rho*(1/(1 + exp((25 - x[6])/3.)))*(1/(1 + exp(5.5 - x[5])));
             const double IGlia = Gglia/(1 + exp((18.- x[5])/2.5));
             const double Idiff = eps0*(x[5] - Koinf);
