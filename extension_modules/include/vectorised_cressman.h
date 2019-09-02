@@ -276,12 +276,12 @@ class ODESolverVectorisedSubDomain
             num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
             // vector of the cell tags in `parameter_map`.
             std::vector< int > cell_tags {};
-            /* rhs_map = ode_map.get_map(); */
+            rhs_map = ode_map.get_map();
 
             // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
             for (auto &kv : ode_map.get_map())
             {
-                rhs_map[kv.first] = std::make_shared< Cressman >(Cressman(4.0));
+                /* rhs_map[kv.first] = std::make_shared< Cressman >(Cressman(4.0)); */
                 cell_tags.emplace_back(kv.first);
             }
 
@@ -329,11 +329,14 @@ class ODESolverVectorisedSubDomain
 
                     /* for (auto v: u_prev) */
                     /*     std::cout << v << ", "; */
+                    /* std::cout << std::endl; */
                     /* forward_euler(const_stepper, rhs_map[kv.first], u_prev, t0, t1, dt); */
+                    forward_euler(*(rhs_map[kv.first].get()), u, u_prev, t0, t1, dt);
                     /* for (auto v: u_prev) */
                     /*     std::cout << v << ", "; */
                     /* std::cout << std::endl; */
-                    forward_euler(*(rhs_map[kv.first].get()), u, u_prev, t0, t1, dt);
+                    /* std::cout << std::endl; */
+                    /* std::cout << std::endl; */
 
                     // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
                     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
