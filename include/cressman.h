@@ -4,9 +4,13 @@
 // stl
 #include <cmath>
 #include <iostream>
+#include <memory.h>     // enable_shared_from_this
+
+// local headers
+#include "odebase.h"
 
 
-class Cressman
+class Cressman : public ODEBase, public std::enable_shared_from_this< Cressman >
 {
     public:
         Cressman(

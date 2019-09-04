@@ -43,6 +43,26 @@ typedef std::map< int, std::vector< double > > vertex_vector_map;
 typedef std::map< int, std::set< size_t > > index_map;
 
 
+class ODEMap
+{
+    public:
+        template <typename ode_type >
+        void add_ode(int key, ode_type &ode)
+        {
+            ode_map[key] = std::make_shared< ODEBase >(ode);
+        }
+
+        std::map< int, std::shared_ptr< ODEBase > > get_map()
+        {
+            return ode_map;
+        }
+
+    private:
+        std::map< int, std::shared_ptr< ODEBase > > ode_map;
+};
+
+
+
 index_map new_and_improved_dof_filter(
         std::shared_ptr< const GenericDofMap > dofmap,
         const MeshFunction< size_t > &cell_function,
