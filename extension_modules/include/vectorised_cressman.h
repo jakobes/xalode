@@ -26,9 +26,12 @@
 #include <boost/numeric/odeint.hpp>
 
 // xalode headers
-#include "xalode/cressman.h"
-#include "xalode/forward_euler.h"
-#include "xalode/utils.h"
+/* #include "xalode/cressman.h" */
+/* #include "xalode/forward_euler.h" */
+/* #include "xalode/utils.h" */
+/* #include "cressman.h" */
+/* #include "forward_euler.h" */
+/* #include "utils.h" */
 
 #include <dolfin/log/log.h>
 
@@ -48,8 +51,11 @@ class ODEMap
     public:
         template <typename ode_type >
         void add_ode(int key, ode_type &ode)
+        /* void add_ode(int key, std::shared_ptr< ode_type > ode_ptr) */
         {
-            ode_map[key] = std::make_shared< ODEBase >(ode);
+            /* ode_map[key] = ode.clone(); */
+            /* ode_map.emplace(std::make_pair(key, ode_ptr)); */
+            ode_map.emplace(std::make_pair(key, ode.clone()));
         }
 
         std::map< int, std::shared_ptr< ODEBase > > get_map()
@@ -201,68 +207,6 @@ void assign_vector(
 }
 
 
-class ODESolverVectorised
-{
-    public:
-        ODESolverVectorised(
-                const ndarray &V_map,
-                const ndarray &m_map,
-                const ndarray &n_map,
-                const ndarray &h_map,
-                const ndarray &Ca_map,
-                const ndarray &K_map,
-                const ndarray &Na_map) :
-            V_map(V_map),
-            n_map(n_map),
-            m_map(m_map),
-            h_map(h_map),
-            Ca_map(Ca_map),
-            K_map(K_map),
-            Na_map(Na_map)
-            {
-                rhs = new Cressman();
-            }
-
-        ~ODESolverVectorised() { delete rhs; }       // Why does not unique_ptr work?
-
-        void solve(PETScVector &state, const double t0, const double t1, const double dt)
-        {
-            for (size_t i = 0; i < V_map.size(); ++i)
-            {
-                u_prev[0] = state[V_map[i]];
-                u_prev[1] = state[m_map[i]];
-                u_prev[2] = state[n_map[i]];
-                u_prev[3] = state[h_map[i]];
-                u_prev[4] = state[Ca_map[i]];
-                u_prev[5] = state[K_map[i]];
-                u_prev[6] = state[Na_map[i]];
-
-                forward_euler(*rhs, u, u_prev, t0, t1, dt);
-
-                VecSetValue(state.vec(), V_map[i], u[0], INSERT_VALUES);
-                VecSetValue(state.vec(), m_map[i], u[1], INSERT_VALUES);
-                VecSetValue(state.vec(), n_map[i], u[2], INSERT_VALUES);
-                VecSetValue(state.vec(), h_map[i], u[3], INSERT_VALUES);
-                VecSetValue(state.vec(), Ca_map[i], u[4], INSERT_VALUES);
-                VecSetValue(state.vec(), K_map[i], u[5], INSERT_VALUES);
-                VecSetValue(state.vec(), Na_map[i], u[6], INSERT_VALUES);
-            }
-        }
-
-    private:
-        Cressman *rhs;
-        const ndarray V_map;
-        const ndarray n_map;
-        const ndarray m_map;
-        const ndarray h_map;
-        const ndarray Ca_map;
-        const ndarray K_map;
-        const ndarray Na_map;
-        std::array< double, 7 > u;
-        std::array< double, 7 > u_prev;
-};
-
-
 class ODESolverVectorisedSubDomain
 {
     public:
@@ -275,12 +219,20 @@ class ODESolverVectorisedSubDomain
             // vector of the cell tags in `parameter_map`.
             std::vector< int > cell_tags {};
 
+            ODEMap odemap;
+
             // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
             for (auto &kv : parameter_map)
             {
-                rhs_map[kv.first] = Cressman(kv.second);
+                auto ode = Cressman(kv.second);
+                /* rhs_map[kv.first] = ode.clone(); */
+                /* rhs_map[kv.first] = std::make_shared< Cressman >(ode); */
                 cell_tags.emplace_back(kv.first);
+                /* odemap.add_ode(kv.first, std::make_shared< Cressman >(ode)); */
+                /* odemap.add_ode(kv.first, ode.clone()); */
+                odemap.add_ode< Cressman >(kv.first, ode);
             }
+            ode_map = odemap.get_map();
 
             for (int ct: cell_tags)
             {
@@ -295,7 +247,7 @@ class ODESolverVectorisedSubDomain
                         cell_function, cell_tags);
                 for (const auto &kv: tag_dof_map)
                 {
-                    tag_state_dof_map[kv.first][sub_space_counter] = 
+                    tag_state_dof_map[kv.first][sub_space_counter] =
                         std::vector< size_t >(kv.second.begin(), kv.second.end());
                 }
             }
@@ -313,7 +265,7 @@ class ODESolverVectorisedSubDomain
 
             for (const auto &kv : tag_state_dof_map)
             {
-                auto rhs = rhs_map[kv.first];
+                /* auto rhs = rhs_map[kv.first]; */
 
                 // Assume all dof vectors are of equal size. Anything else is a bug!
                 for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter)
@@ -324,7 +276,19 @@ class ODESolverVectorisedSubDomain
                         u_prev[state_counter] = state[kv.second[state_counter][dof_counter]];
                     }
 
-                    forward_euler(const_stepper, rhs_map[kv.first], u_prev, t0, t1, dt);
+                    ode_map[kv.first].get()->print();
+                    for (auto v: u_prev)
+                        std::cout << v << ", ";
+                    std::cout << std::endl;
+
+                    forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt);
+
+                    /* forward_euler(const_stepper, rhs_map[kv.first], u_prev, t0, t1, dt); */
+                    for (auto v: u_prev)
+                        std::cout << v << ", ";
+                    std::cout << std::endl;
+                    std::cout << std::endl;
+                    std::cout << std::endl;
 
                     // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
                     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
@@ -338,7 +302,8 @@ class ODESolverVectorisedSubDomain
 
     private:
         MeshFunction< size_t > vertex_function;
-        std::map< int, Cressman > rhs_map;
+        /* std::map< int, std::shared_ptr< Cressman > > rhs_map; */
+        std::map< int, std::shared_ptr< ODEBase > > rhs_map;
         int num_sub_spaces;
 
         // cell_tag -> state variables -> dofs
@@ -346,20 +311,12 @@ class ODESolverVectorisedSubDomain
 
         // Ode stepper
         modified_midpoint< std::vector< double > > const_stepper;
+
+        std::map< int, std::shared_ptr< ODEBase > > ode_map;
 };
 
 
 PYBIND11_MODULE(SIGNATURE, m) {
-    py::class_< ODESolverVectorised >(m, "LatticeODESolver")
-        .def(py::init<
-                const ndarray &,
-                const ndarray &,
-                const ndarray &,
-                const ndarray &,
-                const ndarray &,
-                const ndarray &,
-                const ndarray & >())
-        .def("solve", &ODESolverVectorised::solve);
     py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolverSubDomain")
         .def(py::init<
                 const FunctionSpace &,

@@ -6,9 +6,7 @@
 #include <boost/numeric/odeint.hpp>
 
 // local headers
-#include "odebase.h"
-
-#include <assert.h>
+/* #include "odebase.h" */
 
 using namespace boost::numeric::odeint;
 
@@ -52,7 +50,6 @@ size_t forward_euler(
 {
     const double dt = 1;     // time step of observer calls
     size_t num_of_steps = integrate_adaptive(stepper, rhs, state, t0, t1, dt);
-    assert(false);
     return num_of_steps;
 }
 
@@ -66,7 +63,6 @@ void forward_euler(
         const double t1,
         const double dt)
 {
-    assert(false);
     integrate_const(stepper, rhs, state, t0, t1, dt);
 }
 
@@ -80,8 +76,11 @@ void forward_euler(
         const double t1,
         const double dt)
 {
-    assert(false);
-    integrate_const(stepper, *(rhs_ptr.get()), state, t0, t1, dt);
+    /* integrate_const(stepper, *(rhs_ptr.get()), state, t0, t1, dt); */
+    integrate_const(
+            stepper,
+            [rhs_ptr](const vector_type &x, vector_type &dxdt, const double t){ rhs_ptr.get()->eval(x, dxdt, t); },
+            state, t0, t1, dt);
 }
 
 #endif

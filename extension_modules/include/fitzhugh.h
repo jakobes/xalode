@@ -5,14 +5,19 @@
 #include <cmath>
 #include <iostream>
 #include <memory.h>     // Enable_shared_from_this
+#include <vector>
 
 // local headers
-#include "odebase.h"
+/* #include "odebase.h" */
 
 
-class Fitzhugh : public ODEBase, public std::enable_shared_from_this< ODEBase >
+/* class Fitzhugh : public ODEBase, public std::enable_shared_from_this< Fitzhugh > */
+class Fitzhugh : public ODEBase
 {
     public:
+        typedef std::vector< double > vector_type;
+
+
         Fitzhugh(
                 double a = 0.13,
                 double b = 13.0,
@@ -27,13 +32,30 @@ class Fitzhugh : public ODEBase, public std::enable_shared_from_this< ODEBase >
         v_th = v_rest + a*v_amp;
     }
 
-    template< class vector_type >
-    void operator() (const vector_type &x, vector_type &dxdt, const double /* t */)
+    std::shared_ptr< ODEBase > clone() const override
+    {
+        return std::make_shared< Fitzhugh >(*this);
+    }
+
+    void operator() (const vector_type &x, vector_type &dxdt, const double /* t */) const override
     {
         using namespace std;
 
         dxdt[0] = c1/(pow(v_amp, 2))*(x[0] - v_rest)*(x[0] - v_th)*(v_peak - x[0]) - c2*x[1];
         dxdt[1] = b*(x[0] - v_rest - c3*x[1]);
+    }
+
+    void eval(const vector_type &x, vector_type &dxdt, const double /* t */) const override
+    {
+        using namespace std;
+
+        dxdt[0] = c1/(pow(v_amp, 2))*(x[0] - v_rest)*(x[0] - v_th)*(v_peak - x[0]) - c2*x[1];
+        dxdt[1] = b*(x[0] - v_rest - c3*x[1]);
+    }
+
+    virtual void print() const override
+    {
+        std::cout << "Bar" << std::endl;
     }
 
     private:
