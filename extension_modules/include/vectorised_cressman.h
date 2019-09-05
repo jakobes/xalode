@@ -276,19 +276,19 @@ class ODESolverVectorisedSubDomain
                         u_prev[state_counter] = state[kv.second[state_counter][dof_counter]];
                     }
 
-                    ode_map[kv.first].get()->print();
-                    for (auto v: u_prev)
-                        std::cout << v << ", ";
-                    std::cout << std::endl;
+                    /* ode_map[kv.first].get()->print(); */
+                    /* for (auto v: u_prev) */
+                    /*     std::cout << v << ", "; */
+                    /* std::cout << std::endl; */
 
                     forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt);
 
                     /* forward_euler(const_stepper, rhs_map[kv.first], u_prev, t0, t1, dt); */
-                    for (auto v: u_prev)
-                        std::cout << v << ", ";
-                    std::cout << std::endl;
-                    std::cout << std::endl;
-                    std::cout << std::endl;
+                    /* for (auto v: u_prev) */
+                    /*     std::cout << v << ", "; */
+                    /* std::cout << std::endl; */
+                    /* std::cout << std::endl; */
+                    /* std::cout << std::endl; */
 
                     // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
                     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
