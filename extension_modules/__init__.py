@@ -68,7 +68,7 @@ class ModuleCache:
 
 _MODULE_CACHE = ModuleCache()
 _MODULE_CACHE.add_module(
-    "Cressman",
+    "LatticeODESolver",
     ["odebase.h", "utils.h", "cressman.h", "fitzhugh.h", "forward_euler.h", "vectorised_cressman.h"]
 )
 _MODULE_CACHE.add_module("Noble", ["noble.h"])

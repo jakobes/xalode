@@ -19,14 +19,9 @@ class ODEBase
             return std::make_shared< ODEBase >(*this);
         }
 
-        virtual void operator() (const vector_type &x, vector_type &dxdt, const double /* t */) const
-        {
-            std::cout << "Foo" << std::endl;
-        }
+        virtual void operator() (const vector_type &x, vector_type &dxdt, const double /* t */) const { }
 
-        virtual void eval(const vector_type &x, vector_type &dxdt, const double /* t */) const {
-            std::cout << "Foo" << std::endl;
-        }
+        virtual void eval(const vector_type &x, vector_type &dxdt, const double /* t */) const { }
 
         virtual void print() const
         {

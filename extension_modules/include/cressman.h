@@ -18,7 +18,7 @@ class Cressman : public ODEBase
     public:
         typedef std::vector< double > vector_type;
 
-        virtual void print() const override
+        void print() const override
         {
             std::cout << "Bar" << std::endl;
         }
@@ -51,7 +51,6 @@ class Cressman : public ODEBase
 
         std::shared_ptr< ODEBase > clone() const override
         {
-            std::cout << "BarBar" << std::endl;
             return std::make_shared< Cressman >(*this);
         }
 

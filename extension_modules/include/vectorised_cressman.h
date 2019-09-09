@@ -22,18 +22,11 @@
 #include <dolfin/mesh/MeshFunction.h>
 #include <dolfin/function/FunctionSpace.h>
 
+#include <dolfin/log/log.h>
+
 // ODEINT
 #include <boost/numeric/odeint.hpp>
 
-// xalode headers
-/* #include "xalode/cressman.h" */
-/* #include "xalode/forward_euler.h" */
-/* #include "xalode/utils.h" */
-/* #include "cressman.h" */
-/* #include "forward_euler.h" */
-/* #include "utils.h" */
-
-#include <dolfin/log/log.h>
 
 namespace py = pybind11;
 
@@ -51,10 +44,7 @@ class ODEMap
     public:
         template <typename ode_type >
         void add_ode(int key, ode_type &ode)
-        /* void add_ode(int key, std::shared_ptr< ode_type > ode_ptr) */
         {
-            /* ode_map[key] = ode.clone(); */
-            /* ode_map.emplace(std::make_pair(key, ode_ptr)); */
             ode_map.emplace(std::make_pair(key, ode.clone()));
         }
 
@@ -213,26 +203,23 @@ class ODESolverVectorisedSubDomain
         ODESolverVectorisedSubDomain(
                 const FunctionSpace &mixed_function_space,
                 const MeshFunction< size_t > &cell_function,
-                const std::map< int, float > &parameter_map)
+                ODEMap &ode_container)
+                /* const std::map< int, float > &parameter_map) */
         {
             num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
             // vector of the cell tags in `parameter_map`.
             std::vector< int > cell_tags {};
 
-            ODEMap odemap;
+            ode_map = ode_container.get_map();
 
             // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
-            for (auto &kv : parameter_map)
+            /* for (auto &kv : parameter_map) */
+            for (auto &kv : ode_map)
             {
-                auto ode = Cressman(kv.second);
-                /* rhs_map[kv.first] = ode.clone(); */
-                /* rhs_map[kv.first] = std::make_shared< Cressman >(ode); */
                 cell_tags.emplace_back(kv.first);
-                /* odemap.add_ode(kv.first, std::make_shared< Cressman >(ode)); */
-                /* odemap.add_ode(kv.first, ode.clone()); */
-                odemap.add_ode< Cressman >(kv.first, ode);
+                /* auto ode = Cressman(kv.second); */
+                /* odemap.add_ode< Cressman >(kv.first, ode); */
             }
-            ode_map = odemap.get_map();
 
             for (int ct: cell_tags)
             {
@@ -317,11 +304,51 @@ class ODESolverVectorisedSubDomain
 
 
 PYBIND11_MODULE(SIGNATURE, m) {
-    py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolverSubDomain")
+    py::class_< ODEMap >(m, "ODEMap")
+        .def(py::init<>())
+        .def("add_ode", &ODEMap::add_ode< Cressman >)
+        .def("add_ode", &ODEMap::add_ode< Fitzhugh >);
+
+    py::class_< Cressman >(m, "Cressman")
+        .def(py::init<
+                    double, double, double, double,
+                    double, double, double, double,
+                    double, double, double, double>(),
+               py::arg("Kbath") = 4.0,
+               py::arg("Cm") = 1.0,
+               py::arg("GNa") = 100.0,
+               py::arg("GK") = 40.0,
+               py::arg("GAHP") = 0.01,
+               py::arg("GKL") = 0.05,
+               py::arg("GNaL") = 0.0175,
+               py::arg("GClL") = 0.05,
+               py::arg("GCa") = 0.1,
+               py::arg("Gglia") = 66.0,
+               py::arg("gamma1") = 0.0554,
+               py::arg("tau") = 1000.0);
+        // There is some skullduggery with virtual functions. Trampoline classes?
+        /* .def("eval", Cressman::eval); */
+
+    py::class_< Fitzhugh >(m, "Fitzhugh")
+        .def(py::init<
+                    double, double, double, double,
+                    double, double, double>(),
+              py::arg("a") = 0.13,
+              py::arg("b") = 13.0,
+              py::arg("c1") = 0.26,
+              py::arg("c2") = 10.0,
+              py::arg("c3") = 1.0,
+              py::arg("v_rest") = -70.0,
+              py::arg("v_peak") = 40);
+        // There is some skullduggery with virtual functions. Trampoline classes?
+        /* .def("eval", Fitzhugh::eval); */
+
+    py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolver")
         .def(py::init<
                 const FunctionSpace &,
                 const MeshFunction< size_t > &,
-                const std::map< int, float > & >())
+                ODEMap &>())
+                /* const std::map< int, float > & >()) */
         .def("solve", &ODESolverVectorisedSubDomain::solve);
 
     m.def("filter_dofs", &filter_dofs);

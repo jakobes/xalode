@@ -24,8 +24,8 @@ class Fitzhugh : public ODEBase
                 double c1 = 0.26,
                 double c2 = 10.0,
                 double c3 = 1.0,
-                double v_rest = -70.0,
-                double v_peak = 40) :
+                double v_rest = -65.0,
+                double v_peak = 60) :
             a(a), b(b), c1(c1), c2(c2), c3(c3), v_rest(v_rest), v_peak(v_peak)
     {
         v_amp = v_peak - v_rest;
@@ -53,7 +53,7 @@ class Fitzhugh : public ODEBase
         dxdt[1] = b*(x[0] - v_rest - c3*x[1]);
     }
 
-    virtual void print() const override
+    void print() const override
     {
         std::cout << "Bar" << std::endl;
     }
