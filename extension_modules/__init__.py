@@ -21,8 +21,8 @@ def cpp_module(
         print(cpp_code)
 
     module = compile_cpp_code(
-            cpp_code,
-            include_dirs=["/mn/sarpanitu/studenter-u1/jakobes/dev/include"]
+        cpp_code,
+        include_dirs=[]
     )
     assert module is not None
     return module
@@ -67,7 +67,10 @@ class ModuleCache:
 
 
 _MODULE_CACHE = ModuleCache()
-_MODULE_CACHE.add_module("Cressman", ["vectorised_cressman.h"])
+_MODULE_CACHE.add_module(
+    "LatticeODESolver",
+    ["odebase.h", "utils.h", "cressman.h", "fitzhugh.h", "morris_lecar.h", "forward_euler.h", "vectorised_cressman.h"]
+)
 _MODULE_CACHE.add_module("Noble", ["noble.h"])
 
 
