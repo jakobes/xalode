@@ -1,12 +1,12 @@
 #ifndef FORWARD_EULER_H
 #define FORWARD_EULER_H
 
+// stl
+#include <vector>
 
 // ODEINT
 #include <boost/numeric/odeint.hpp>
 
-// local headers
-/* #include "odebase.h" */
 
 using namespace boost::numeric::odeint;
 
@@ -67,15 +67,15 @@ void forward_euler(
 }
 
 
-template< class stepper_type, class vector_type, class ode_type>
+template< class vector_type, class ode_type>
 void forward_euler(
-        stepper_type &stepper,
         std::shared_ptr< ode_type > rhs_ptr,
         vector_type &state,
         const double t0,
         const double t1,
         const double dt)
 {
+    modified_midpoint< std::vector< double > > stepper;
     /* integrate_const(stepper, *(rhs_ptr.get()), state, t0, t1, dt); */
     integrate_const(
             stepper,

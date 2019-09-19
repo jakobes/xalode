@@ -22,7 +22,8 @@ def cpp_module(
 
     module = compile_cpp_code(
         cpp_code,
-        include_dirs=[]
+        include_dirs=[],
+        libraries=["pthread"]
     )
     assert module is not None
     return module
@@ -69,7 +70,16 @@ class ModuleCache:
 _MODULE_CACHE = ModuleCache()
 _MODULE_CACHE.add_module(
     "LatticeODESolver",
-    ["odebase.h", "utils.h", "cressman.h", "fitzhugh.h", "morris_lecar.h", "forward_euler.h", "vectorised_cressman.h"]
+    [
+        "odebase.h",
+        "utils.h",
+        "cressman.h",
+        "fitzhugh.h",
+        "morris_lecar.h",
+        "forward_euler.h",
+        "threading.h",
+        "vectorised_cressman.h"
+    ]
 )
 _MODULE_CACHE.add_module("Noble", ["noble.h"])
 

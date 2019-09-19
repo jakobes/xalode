@@ -204,7 +204,6 @@ class ODESolverVectorisedSubDomain
                 const FunctionSpace &mixed_function_space,
                 const MeshFunction< size_t > &cell_function,
                 ODEMap &ode_container)
-                /* const std::map< int, float > &parameter_map) */
         {
             num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
             // vector of the cell tags in `parameter_map`.
@@ -250,40 +249,35 @@ class ODESolverVectorisedSubDomain
             std::vector< double> u(num_sub_spaces);
             std::vector< double > u_prev(num_sub_spaces);
 
-            for (const auto &kv : tag_state_dof_map)
+            for (auto kv : tag_state_dof_map)
             {
-                /* auto rhs = rhs_map[kv.first]; */
+                parallel_solve_assign_ode(
+                        ode_map[kv.first],
+                        state,
+                        std::get<1>(kv),
+                        t0,
+                        t1,
+                        dt,
+                        num_sub_spaces,
+                        1);
+                /* // Assume all dof vectors are of equal size. Anything else is a bug! */
+                /* for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter) */
+                /* { */
+                /*     // Fill values from `state` into `u_prev`. */
+                /*     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter) */
+                /*     { */
+                /*         u_prev[state_counter] = state[kv.second[state_counter][dof_counter]]; */
+                /*     } */
 
-                // Assume all dof vectors are of equal size. Anything else is a bug!
-                for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter)
-                {
-                    // Fill values from `state` into `u_prev`.
-                    for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
-                    {
-                        u_prev[state_counter] = state[kv.second[state_counter][dof_counter]];
-                    }
+                /*     forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt); */
 
-                    /* ode_map[kv.first].get()->print(); */
-                    /* for (auto v: u_prev) */
-                    /*     std::cout << v << ", "; */
-                    /* std::cout << std::endl; */
-
-                    forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt);
-
-                    /* forward_euler(const_stepper, rhs_map[kv.first], u_prev, t0, t1, dt); */
-                    /* for (auto v: u_prev) */
-                    /*     std::cout << v << ", "; */
-                    /* std::cout << std::endl; */
-                    /* std::cout << std::endl; */
-                    /* std::cout << std::endl; */
-
-                    // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
-                    for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
-                    {
-                        VecSetValue(state.vec(), kv.second[state_counter][dof_counter],
-                                u_prev[state_counter], INSERT_VALUES);
-                    }
-                }
+                /*     // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev */
+                /*     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter) */
+                /*     { */
+                /*         VecSetValue(state.vec(), kv.second[state_counter][dof_counter], */
+                /*                 u_prev[state_counter], INSERT_VALUES); */
+                /*     } */
+                /* } */
             }
         }
 
