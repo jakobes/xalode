@@ -21,8 +21,8 @@ def cpp_module(
         print(cpp_code)
 
     module = compile_cpp_code(
-        cpp_code,
-        include_dirs=None
+            cpp_code,
+            include_dirs=["/mn/sarpanitu/studenter-u1/jakobes/dev/include"]
     )
     assert module is not None
     return module

@@ -9,7 +9,7 @@ set(CMAKE_BUILD_TYPE RELEASE)
 find_package(Boost REQUIRED)
 
 # Armadillo
-find_package(Armadillo REQUIRED)
+# find_package(Armadillo REQUIRED)
 
 # pybin11
 add_subdirectory(external/pybind11)
