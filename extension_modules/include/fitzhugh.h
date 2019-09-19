@@ -53,11 +53,6 @@ class Fitzhugh : public ODEBase
         dxdt[1] = b*(x[0] - v_rest - c3*x[1]);
     }
 
-    void print() const override
-    {
-        std::cout << "Bar" << std::endl;
-    }
-
     private:
         double a;
         double b;

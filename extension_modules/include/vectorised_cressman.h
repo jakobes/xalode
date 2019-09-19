@@ -307,7 +307,8 @@ PYBIND11_MODULE(SIGNATURE, m) {
     py::class_< ODEMap >(m, "ODEMap")
         .def(py::init<>())
         .def("add_ode", &ODEMap::add_ode< Cressman >)
-        .def("add_ode", &ODEMap::add_ode< Fitzhugh >);
+        .def("add_ode", &ODEMap::add_ode< Fitzhugh >)
+        .def("add_ode", &ODEMap::add_ode< MorrisLecar >);
 
     py::class_< Cressman >(m, "Cressman")
         .def(py::init<
@@ -342,6 +343,9 @@ PYBIND11_MODULE(SIGNATURE, m) {
               py::arg("v_peak") = 40);
         // There is some skullduggery with virtual functions. Trampoline classes?
         /* .def("eval", Fitzhugh::eval); */
+
+    py::class_< MorrisLecar >(m, "MorrisLecar")
+        .def(py::init<double>(), py::arg("Iext") = 40);
 
     py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolver")
         .def(py::init<
