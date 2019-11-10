@@ -87,7 +87,7 @@ class Cressman : public ODEBase
             dxdt[1] = phi*(minf - x[1])/taum;
             dxdt[2] = phi*(ninf - x[2])/taun;
             dxdt[3] = phi*(hinf - x[3])/tauh;
-            dxdt[4] = x[4]/80. - 0.002*GCa*(x[0] - ECa)/(1 + exp(-(x[0] + 25.)/2.5));
+            dxdt[4] = -x[4]/80. - 0.002*GCa*(x[0] - ECa)/(1 + exp(-(x[0] + 25.)/2.5));
             dxdt[5] = (gamma1*beta0*IK - 2*beta0*Ipump - IGlia - Idiff)/tau;
             dxdt[6] = -(gamma1*INa + 3*Ipump)/tau;
         }
@@ -125,7 +125,7 @@ class Cressman : public ODEBase
             dxdt[1] = phi*(minf - x[1])/taum;
             dxdt[2] = phi*(ninf - x[2])/taun;
             dxdt[3] = phi*(hinf - x[3])/tauh;
-            dxdt[4] = x[4]/80. - 0.002*GCa*(x[0] - ECa)/(1 + exp(-(x[0] + 25.)/2.5));
+            dxdt[4] = -x[4]/80. - 0.002*GCa*(x[0] - ECa)/(1 + exp(-(x[0] + 25.)/2.5));
             dxdt[5] = (gamma1*beta0*IK - 2*beta0*Ipump - IGlia - Idiff)/tau;
             dxdt[6] = -(gamma1*INa + 3*Ipump)/tau;
         }
