@@ -12,7 +12,7 @@ find_package(Boost REQUIRED)
 # find_package(Armadillo REQUIRED)
 
 # pybin11
-add_subdirectory(external/pybind11)
+add_subdirectory(pybind11)
 
 set(SOURCE_DIR "include")
 include_directories(${SOURCE_DIR})
