@@ -61,7 +61,7 @@ class ODEMap
 
 index_map new_and_improved_dof_filter(
         std::shared_ptr< const GenericDofMap > dofmap,
-        const ndarray cell_function,
+        const std::vector< size_t > cell_function,
         const std::vector< int > &cell_tags)
 {
     /*
@@ -167,7 +167,7 @@ MeshFunction< size_t > cell_to_vertex(const MeshFunction< size_t > &cell_functio
 void assign_vector(
         PETScVector &vector,
         vertex_vector_map &initial_conditions,
-        const ndarray &cell_function,
+        const std::vector< size_t > &cell_function,
         const FunctionSpace &mixed_function_space)
 {
     const auto num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
@@ -202,7 +202,7 @@ class ODESolverVectorisedSubDomain
     public:
         ODESolverVectorisedSubDomain(
                 const FunctionSpace &mixed_function_space,
-                const ndarray &cell_function,
+                const std::vector< size_t > &cell_function,
                 ODEMap &ode_container)
                 /* const std::map< int, float > &parameter_map) */
         {
@@ -350,7 +350,7 @@ PYBIND11_MODULE(SIGNATURE, m) {
     py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolver")
         .def(py::init<
                 const FunctionSpace &,
-                const ndarray &,
+                const std::vector< size_t > &,
                 ODEMap &>())
                 /* const std::map< int, float > & >()) */
         .def("solve", &ODESolverVectorisedSubDomain::solve);

@@ -10,6 +10,7 @@ namespace py = pybind11;
 
 PYBIND11_MAKE_OPAQUE(std::vector< double >);
 PYBIND11_MAKE_OPAQUE(std::vector< int >);
+PYBIND11_MAKE_OPAQUE(std::vector< size_t >);
 
 
 template<typename T>
@@ -26,4 +27,7 @@ PYBIND11_MODULE(xalode, m) {
 
     py::bind_vector< std::vector< int > >(m, "VectorInt", py::buffer_protocol())
         .def_buffer(&vector_buffer< int >);
+
+    py::bind_vector< std::vector< size_t > >(m, "VectorSizet", py::buffer_protocol())
+        .def_buffer(&vector_buffer< size_t >);
 }
