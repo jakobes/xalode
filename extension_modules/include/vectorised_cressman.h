@@ -303,6 +303,21 @@ class ODESolverVectorisedSubDomain
 };
 
 
+void test_function_space(std::shared_ptr< const FunctionSpace > foo)
+{
+    std::cout << "Success! " << foo.get()->dim() << std::endl;
+}
+
+
+void test_vector(std::vector< size_t > foo)
+{
+    std::cout << "success! \n" << std::endl;
+    for (auto const f: foo) {
+        std::cout << f << std::endl;
+    }
+}
+
+
 PYBIND11_MODULE(SIGNATURE, m) {
     py::class_< ODEMap >(m, "ODEMap")
         .def(py::init<>())
@@ -359,6 +374,10 @@ PYBIND11_MODULE(SIGNATURE, m) {
     m.def("cell_to_vertex", &cell_to_vertex);
     m.def("assign_vector", &assign_vector);
     m.def("new_and_improved_dof_filter", &new_and_improved_dof_filter);
+
+    m.def("test_vector", &test_vector);
+    m.def("test_function_space", &test_function_space);
+
 }
 
 
