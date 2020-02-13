@@ -171,6 +171,7 @@ void assign_vector(
         const FunctionSpace &mixed_function_space)
 {
     const auto num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
+    assert(false);
 
     // Store keys in separate vector
     std::vector< int > cell_tags(initial_conditions.size());
@@ -201,24 +202,21 @@ class ODESolverVectorisedSubDomain
 {
     public:
         ODESolverVectorisedSubDomain(
-                const FunctionSpace &mixed_function_space,
+                std::shared_ptr< const FunctionSpace > &mixed_function_space,
                 const std::vector< size_t > &cell_function,
                 ODEMap &ode_container)
                 /* const std::map< int, float > &parameter_map) */
         {
-            num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
+            num_sub_spaces = mixed_function_space.get()->element().get()->num_sub_elements();
             // vector of the cell tags in `parameter_map`.
             std::vector< int > cell_tags {};
 
             ode_map = ode_container.get_map();
 
             // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
-            /* for (auto &kv : parameter_map) */
             for (auto &kv : ode_map)
             {
                 cell_tags.emplace_back(kv.first);
-                /* auto ode = Cressman(kv.second); */
-                /* odemap.add_ode< Cressman >(kv.first, ode); */
             }
 
             for (int ct: cell_tags)
@@ -230,7 +228,7 @@ class ODESolverVectorisedSubDomain
             for (int sub_space_counter = 0; sub_space_counter < num_sub_spaces; ++sub_space_counter)
             {
                 const auto tag_dof_map = new_and_improved_dof_filter(
-                        mixed_function_space.sub(sub_space_counter).get()->dofmap(),
+                        mixed_function_space.get()->sub(sub_space_counter).get()->dofmap(),
                         cell_function, cell_tags);
                 for (const auto &kv: tag_dof_map)
                 {
@@ -252,8 +250,6 @@ class ODESolverVectorisedSubDomain
 
             for (const auto &kv : tag_state_dof_map)
             {
-                /* auto rhs = rhs_map[kv.first]; */
-
                 // Assume all dof vectors are of equal size. Anything else is a bug!
                 for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter)
                 {
@@ -263,19 +259,7 @@ class ODESolverVectorisedSubDomain
                         u_prev[state_counter] = state[kv.second[state_counter][dof_counter]];
                     }
 
-                    /* ode_map[kv.first].get()->print(); */
-                    /* for (auto v: u_prev) */
-                    /*     std::cout << v << ", "; */
-                    /* std::cout << std::endl; */
-
                     forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt);
-
-                    /* forward_euler(const_stepper, rhs_map[kv.first], u_prev, t0, t1, dt); */
-                    /* for (auto v: u_prev) */
-                    /*     std::cout << v << ", "; */
-                    /* std::cout << std::endl; */
-                    /* std::cout << std::endl; */
-                    /* std::cout << std::endl; */
 
                     // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
                     for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
@@ -306,6 +290,11 @@ class ODESolverVectorisedSubDomain
 void test_function_space(std::shared_ptr< const FunctionSpace > foo)
 {
     std::cout << "Success! " << foo.get()->dim() << std::endl;
+}
+
+void test_function_space2(const FunctionSpace foo)
+{
+    std::cout << "Success! " << foo.dim() << std::endl;
 }
 
 
@@ -364,19 +353,15 @@ PYBIND11_MODULE(SIGNATURE, m) {
 
     py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolver")
         .def(py::init<
-                const FunctionSpace &,
+                std::shared_ptr< const FunctionSpace >&,
                 const std::vector< size_t > &,
                 ODEMap &>())
-                /* const std::map< int, float > & >()) */
         .def("solve", &ODESolverVectorisedSubDomain::solve);
 
-    m.def("filter_dofs", &filter_dofs);
-    m.def("cell_to_vertex", &cell_to_vertex);
-    m.def("assign_vector", &assign_vector);
-    m.def("new_and_improved_dof_filter", &new_and_improved_dof_filter);
-
-    m.def("test_vector", &test_vector);
-    m.def("test_function_space", &test_function_space);
+    // m.def("filter_dofs", &filter_dofs);
+    // m.def("cell_to_vertex", &cell_to_vertex);
+    // m.def("assign_vector", &assign_vector);
+    // m.def("new_and_improved_dof_filter", &new_and_improved_dof_filter);
 
 }
 
