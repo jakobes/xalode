@@ -360,7 +360,7 @@ PYBIND11_MODULE(SIGNATURE, m) {
 
     // m.def("filter_dofs", &filter_dofs);
     // m.def("cell_to_vertex", &cell_to_vertex);
-    // m.def("assign_vector", &assign_vector);
+    m.def("assign_vector", &assign_vector);
     // m.def("new_and_improved_dof_filter", &new_and_improved_dof_filter);
 
 }
