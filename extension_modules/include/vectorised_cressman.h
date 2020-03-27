@@ -46,6 +46,7 @@ class ODEMap
         void add_ode(int key, ode_type &ode)
         {
             ode_map.emplace(std::make_pair(key, ode.clone()));
+            cell_tags.emplace_back(key);
         }
 
         std::map< int, std::shared_ptr< ODEBase > > get_map()
@@ -53,7 +54,13 @@ class ODEMap
             return ode_map;
         }
 
+        std::vector< size_t > get_tags()
+        {
+            return cell_tags;
+        }
+
     private:
+        std::vector< size_t > cell_tags;
         std::map< int, std::shared_ptr< ODEBase > > ode_map;
 };
 
@@ -207,35 +214,64 @@ class ODESolverVectorisedSubDomain
                 ODEMap &ode_container)
                 /* const std::map< int, float > &parameter_map) */
         {
+            const auto num_dofs = mixed_function_space.get()->dofmap()->dofs().size();
             num_sub_spaces = mixed_function_space.get()->element().get()->num_sub_elements();
-            // vector of the cell tags in `parameter_map`.
-            std::vector< int > cell_tags {};
 
-            ode_map = ode_container.get_map();
+            /* Unique cell tags */
+            const auto cell_tags = ode_container.get_tags();
+            /* std::sort(cell_tags.begin(), cell_tags.end());      // sort ascending */
 
-            // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable.
-            for (auto &kv : ode_map)
+            /* call value -> cell index */
+            std::map< size_t, std::vector< size_t >> cell_index_map;
+
+            /* Allocate vecotrs for each cell value */
+            for (const auto cell_value: cell_tags)
+                cell_index_map[cell_value] = std::vector< size_t >();
+
+            size_t cell_counter = 0;
+            for (const auto cell_value: cell_function)
             {
-                cell_tags.emplace_back(kv.first);
+                cell_index_map[cell_value].emplace_back(cell_counter++);
             }
 
-            for (int ct: cell_tags)
+            dof_cell_vector = std::vector< size_t >(num_dofs);
+            for (auto const cell_value: cell_tags)
             {
-                tag_state_dof_map[ct] = std::vector< std::vector< size_t > >(
-                        num_sub_spaces, std::vector< size_t >());
-            }
-
-            for (int sub_space_counter = 0; sub_space_counter < num_sub_spaces; ++sub_space_counter)
-            {
-                const auto tag_dof_map = new_and_improved_dof_filter(
-                        mixed_function_space.get()->sub(sub_space_counter).get()->dofmap(),
-                        cell_function, cell_tags);
-                for (const auto &kv: tag_dof_map)
+                for (auto const dofs: cell_index_map[cell_value])
                 {
-                    tag_state_dof_map[kv.first][sub_space_counter] =
-                        std::vector< size_t >(kv.second.begin(), kv.second.end());
+                    dof_cell_vector[dofs] = cell_value;
                 }
             }
+            // dof_cell_vector -- given a dof, look up the corresponing cell tag
+
+            /* // vector of the cell tags in `parameter_map`. */
+            /* std::vector< int > cell_tags {}; */
+
+            /* ode_map = ode_container.get_map(); */
+
+            /* // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable. */
+            /* for (auto &kv : ode_map) */
+            /* { */
+            /*     cell_tags.emplace_back(kv.first); */
+            /* } */
+
+            /* for (int ct: cell_tags) */
+            /* { */
+            /*     tag_state_dof_map[ct] = std::vector< std::vector< size_t > >( */
+            /*             num_sub_spaces, std::vector< size_t >()); */
+            /* } */
+
+            /* for (int sub_space_counter = 0; sub_space_counter < num_sub_spaces; ++sub_space_counter) */
+            /* { */
+            /*     const auto tag_dof_map = new_and_improved_dof_filter( */
+            /*             mixed_function_space.get()->sub(sub_space_counter).get()->dofmap(), */
+            /*             cell_function, cell_tags); */
+            /*     for (const auto &kv: tag_dof_map) */
+            /*     { */
+            /*         tag_state_dof_map[kv.first][sub_space_counter] = */
+            /*             std::vector< size_t >(kv.second.begin(), kv.second.end()); */
+            /*     } */
+            /* } */
 
             // tag_state_dof_map will have keys == cell_tags
             // tag state_dof_map will have length 7 for all keys
@@ -245,30 +281,53 @@ class ODESolverVectorisedSubDomain
 
         void solve(PETScVector &state, const double t0, const double t1, const double dt)
         {
-            std::vector< double> u(num_sub_spaces);
+            // TODO: allocate in constructor
+            std::vector< double > u(num_sub_spaces);
             std::vector< double > u_prev(num_sub_spaces);
 
-            for (const auto &kv : tag_state_dof_map)
+            auto const local_range = state.local_range();
+            auto dof_counter = local_range.first;
+            while (dof_counter < local_range.second)
             {
-                // Assume all dof vectors are of equal size. Anything else is a bug!
-                for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter)
+                for (int sub_space_index = 0; sub_space_index < num_sub_spaces; sub_space_index++)
                 {
-                    // Fill values from `state` into `u_prev`.
-                    for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
-                    {
-                        u_prev[state_counter] = state[kv.second[state_counter][dof_counter]];
-                    }
-
-                    forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt);
-
-                    // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev
-                    for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter)
-                    {
-                        VecSetValue(state.vec(), kv.second[state_counter][dof_counter],
-                                u_prev[state_counter], INSERT_VALUES);
-                    }
+                    u_prev[sub_space_index] = state[dof_counter + sub_space_index];
                 }
+
+                auto const cell_tag = dof_cell_vector[dof_counter];
+                forward_euler(const_stepper, ode_map[cell_tag], u_prev, t0, t1, dt);
+
+                for (int sub_space_index = 0; sub_space_index < num_sub_spaces; sub_space_index++)
+                {
+                    VecSetValue(state.vec(), dof_counter + sub_space_index,
+                            u_prev[sub_space_index], INSERT_VALUES);
+                }
+                dof_counter += num_sub_spaces;
             }
+
+
+            /* for (const auto &kv : tag_state_dof_map) */
+            /* { */
+            /*     // Assume all dof vectors are of equal size. Anything else is a bug! */
+            /*     for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter) */
+            /*     { */
+            /*         // Assume MPI will distribute vector respecting function space dimension */
+            /*         // Fill values from `state` into `u_prev`. */
+            /*         for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter) */
+            /*         { */
+            /*             u_prev[state_counter] = state[kv.second[state_counter][dof_counter]]; */
+            /*         } */
+
+            /*         forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt); */
+
+            /*         // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev */
+            /*         for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter) */
+            /*         { */
+            /*             VecSetValue(state.vec(), kv.second[state_counter][dof_counter], */
+            /*                     u_prev[state_counter], INSERT_VALUES); */
+            /*         } */
+            /*     } */
+            /* } */
         }
 
     private:
@@ -284,6 +343,8 @@ class ODESolverVectorisedSubDomain
         modified_midpoint< std::vector< double > > const_stepper;
 
         std::map< int, std::shared_ptr< ODEBase > > ode_map;
+
+        std::vector< size_t > dof_cell_vector;
 };
 
 

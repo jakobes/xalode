@@ -1,6 +1,7 @@
 #ifndef FORWARD_EULER_H
 #define FORWARD_EULER_H
 
+#include <vector>
 
 // ODEINT
 #include <boost/numeric/odeint.hpp>
@@ -19,9 +20,10 @@ void axpy(vector_type &x, vector_type &y, const float_type a)
 }
 
 
-template< class CallableObjectType, class vector_type >
+template< class CallableObjectType, class vector_type, class ode_type >
 void forward_euler(
-        CallableObjectType &rhs,
+        /* CallableObjectType &rhs, */
+        std::shared_ptr< ode_type > rhs_ptr,
         vector_type &u,
         vector_type &u_prev,
         const double t0,
@@ -31,7 +33,8 @@ void forward_euler(
     auto t = t0;
     while (t < t1)
     {
-        rhs(u_prev, u, t);         // u = rhs(u_prev, t)
+        // rhs(u_prev, u, t);         // u = rhs(u_prev, t)
+        rhs_ptr.get()->eval(u_prev, u, t);
         axpy(u, u_prev, dt);       // u = dt*u + u_prev
 
         u_prev = u;
@@ -40,31 +43,31 @@ void forward_euler(
 }
 
 
-template< class controlled_stepper, class callable_object_type, class vector_type >
-size_t forward_euler(
-        controlled_stepper &stepper,
-        callable_object_type &rhs,
-        vector_type &state,
-        const double t0,
-        const double t1)
-{
-    const double dt = 1;     // time step of observer calls
-    size_t num_of_steps = integrate_adaptive(stepper, rhs, state, t0, t1, dt);
-    return num_of_steps;
-}
+/* template< class controlled_stepper, class callable_object_type, class vector_type > */
+/* size_t forward_euler( */
+/*         controlled_stepper &stepper, */
+/*         callable_object_type &rhs, */
+/*         vector_type &state, */
+/*         const double t0, */
+/*         const double t1) */
+/* { */
+/*     const double dt = 1;     // time step of observer calls */
+/*     size_t num_of_steps = integrate_adaptive(stepper, rhs, state, t0, t1, dt); */
+/*     return num_of_steps; */
+/* } */
 
 
-template< class stepper_type, class callable_object_type, class vector_type >
-void forward_euler(
-        stepper_type &stepper,
-        callable_object_type &rhs,
-        vector_type &state,
-        const double t0,
-        const double t1,
-        const double dt)
-{
-    integrate_const(stepper, rhs, state, t0, t1, dt);
-}
+/* template< class stepper_type, class callable_object_type, class vector_type > */
+/* void forward_euler( */
+/*         stepper_type &stepper, */
+/*         callable_object_type &rhs, */
+/*         vector_type &state, */
+/*         const double t0, */
+/*         const double t1, */
+/*         const double dt) */
+/* { */
+/*     integrate_const(stepper, rhs, state, t0, t1, dt); */
+/* } */
 
 
 template< class stepper_type, class vector_type, class ode_type>
@@ -77,6 +80,10 @@ void forward_euler(
         const double dt)
 {
     /* integrate_const(stepper, *(rhs_ptr.get()), state, t0, t1, dt); */
+    /* std::vector< double > dxdt(state.size()); */
+    /* rhs_ptr.get()->eval(state, dxdt, t0); */
+    rhs_ptr.get()->print();
+
     integrate_const(
             stepper,
             [rhs_ptr](const vector_type &x, vector_type &dxdt, const double t){ rhs_ptr.get()->eval(x, dxdt, t); },
