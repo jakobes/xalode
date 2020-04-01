@@ -19,10 +19,9 @@ void axpy(vector_type &x, vector_type &y, const float_type a)
             [a](const float_type xi, const float_type yi){return a*xi + yi;});
 }
 
-
-template< class CallableObjectType, class vector_type, class ode_type >
-void forward_euler(
-        /* CallableObjectType &rhs, */
+/* template< class CallableObjectType, class vector_type, class ode_type > */
+template< class vector_type, class ode_type >
+void my_forward_euler(
         std::shared_ptr< ode_type > rhs_ptr,
         vector_type &u,
         vector_type &u_prev,
@@ -30,12 +29,14 @@ void forward_euler(
         const double t1,
         const double dt)
 {
+    vector_type foo(7);
+    vector_type bar(7);
     auto t = t0;
     while (t < t1)
     {
-        // rhs(u_prev, u, t);         // u = rhs(u_prev, t)
-        rhs_ptr.get()->eval(u_prev, u, t);
-        axpy(u, u_prev, dt);       // u = dt*u + u_prev
+        rhs_ptr.get()->eval(u_prev, u, t);      // u <- rhs(u_prev, t)
+        /* rhs_ptr.get()->eval(foo, bar, t);      // u <- rhs(u_prev, t) */
+        axpy(u, u_prev, dt);       // u <- dt*u + u_prev
 
         u_prev = u;
         t += dt;
@@ -79,11 +80,6 @@ void forward_euler(
         const double t1,
         const double dt)
 {
-    /* integrate_const(stepper, *(rhs_ptr.get()), state, t0, t1, dt); */
-    /* std::vector< double > dxdt(state.size()); */
-    /* rhs_ptr.get()->eval(state, dxdt, t0); */
-    rhs_ptr.get()->print();
-
     integrate_const(
             stepper,
             [rhs_ptr](const vector_type &x, vector_type &dxdt, const double t){ rhs_ptr.get()->eval(x, dxdt, t); },

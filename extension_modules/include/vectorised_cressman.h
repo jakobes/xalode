@@ -21,6 +21,7 @@
 #include <dolfin/fem/DofMap.h>
 #include <dolfin/mesh/MeshFunction.h>
 #include <dolfin/function/FunctionSpace.h>
+#include <dolfin/common/MPI.h>
 
 #include <dolfin/log/log.h>
 
@@ -209,142 +210,69 @@ class ODESolverVectorisedSubDomain
 {
     public:
         ODESolverVectorisedSubDomain(
-                std::shared_ptr< const FunctionSpace > &mixed_function_space,
-                const std::vector< size_t > &cell_function,
-                ODEMap &ode_container)
-                /* const std::map< int, float > &parameter_map) */
+                ODEMap &ode_container,
+                int num_sub_spaces) : num_sub_spaces(num_sub_spaces)
         {
-            const auto num_dofs = mixed_function_space.get()->dofmap()->dofs().size();
-            num_sub_spaces = mixed_function_space.get()->element().get()->num_sub_elements();
+            ode_map = ode_container.get_map();
+            /* u_prev = std::vector< double >(num_sub_spaces); */
+        }
 
-            /* Unique cell tags */
-            const auto cell_tags = ode_container.get_tags();
-            /* std::sort(cell_tags.begin(), cell_tags.end());      // sort ascending */
-
-            /* call value -> cell index */
-            std::map< size_t, std::vector< size_t >> cell_index_map;
-
-            /* Allocate vecotrs for each cell value */
-            for (const auto cell_value: cell_tags)
-                cell_index_map[cell_value] = std::vector< size_t >();
-
-            size_t cell_counter = 0;
-            for (const auto cell_value: cell_function)
-            {
-                cell_index_map[cell_value].emplace_back(cell_counter++);
-            }
-
-            dof_cell_vector = std::vector< size_t >(num_dofs);
-            for (auto const cell_value: cell_tags)
-            {
-                for (auto const dofs: cell_index_map[cell_value])
-                {
-                    dof_cell_vector[dofs] = cell_value;
-                }
-            }
-            // dof_cell_vector -- given a dof, look up the corresponing cell tag
-
-            /* // vector of the cell tags in `parameter_map`. */
-            /* std::vector< int > cell_tags {}; */
-
-            /* ode_map = ode_container.get_map(); */
-
-            /* // Create `rhs_map` such that rhs_map[parameter value] -> rhs callable. */
-            /* for (auto &kv : ode_map) */
-            /* { */
-            /*     cell_tags.emplace_back(kv.first); */
-            /* } */
-
-            /* for (int ct: cell_tags) */
-            /* { */
-            /*     tag_state_dof_map[ct] = std::vector< std::vector< size_t > >( */
-            /*             num_sub_spaces, std::vector< size_t >()); */
-            /* } */
-
-            /* for (int sub_space_counter = 0; sub_space_counter < num_sub_spaces; ++sub_space_counter) */
-            /* { */
-            /*     const auto tag_dof_map = new_and_improved_dof_filter( */
-            /*             mixed_function_space.get()->sub(sub_space_counter).get()->dofmap(), */
-            /*             cell_function, cell_tags); */
-            /*     for (const auto &kv: tag_dof_map) */
-            /*     { */
-            /*         tag_state_dof_map[kv.first][sub_space_counter] = */
-            /*             std::vector< size_t >(kv.second.begin(), kv.second.end()); */
-            /*     } */
-            /* } */
-
-            // tag_state_dof_map will have keys == cell_tags
-            // tag state_dof_map will have length 7 for all keys
-            // the innermost vectors (dofs) for all 7 will have the same length
-
-        } // I should have some kind of checks. Better do on python side.
-
-        void solve(PETScVector &state, const double t0, const double t1, const double dt)
+        void solve(
+                /* std::vector< double > &state, */
+                PETScVector &state,
+                const double t0,
+                const double t1,
+                const double dt,
+                const PETScVector &indicator_function)
         {
             // TODO: allocate in constructor
-            std::vector< double > u(num_sub_spaces);
-            std::vector< double > u_prev(num_sub_spaces);
 
-            auto const local_range = state.local_range();
-            auto dof_counter = local_range.first;
-            while (dof_counter < local_range.second)
+            std::vector< double > u_prev(num_sub_spaces);
+            std::vector< double > u(num_sub_spaces);
+            std::vector< double > local_state, local_indicator;
+            state.get_local(local_state);
+            indicator_function.get_local(local_indicator);
+
+            const auto indicator_size = indicator_function.local_size();
+            /* std::cout << "indicator size: " << indicator_size << std::endl; */
+            /* std::cout << local_state.size() / num_sub_spaces << std::endl; */
+            /* std::cout << indicator_range.first << " --- " << indicator_range.first / num_sub_spaces << std::endl; */
+            /* std::cout << indicator_range.second << " --- " << indicator_range.second / num_sub_spaces << std::endl; */
+            /* std::cout << std::endl; */
+
+            /* const auto indicator_local_range = indicator_function.local_range(); */
+            /* auto indicator_counter = indicator_local_range.first; */
+            size_t indicator_counter = 0;
+            size_t dof_index = 0;
+            while (dof_index < local_state.size())
             {
-                for (int sub_space_index = 0; sub_space_index < num_sub_spaces; sub_space_index++)
+                // Move variables from state to u_prev
+                for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
                 {
-                    u_prev[sub_space_index] = state[dof_counter + sub_space_index];
+                    u_prev[sub_space_index] = local_state[dof_index + sub_space_index];
                 }
 
-                auto const cell_tag = dof_cell_vector[dof_counter];
+                /* auto const cell_tag = indicator_function[indicator_counter++]; */
+                auto const cell_tag = local_indicator[indicator_counter++];
                 forward_euler(const_stepper, ode_map[cell_tag], u_prev, t0, t1, dt);
 
-                for (int sub_space_index = 0; sub_space_index < num_sub_spaces; sub_space_index++)
-                {
-                    VecSetValue(state.vec(), dof_counter + sub_space_index,
-                            u_prev[sub_space_index], INSERT_VALUES);
-                }
-                dof_counter += num_sub_spaces;
+                for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
+                    local_state[dof_index + sub_space_index] = u[sub_space_index];
+
+                dof_index += num_sub_spaces;
             }
-
-
-            /* for (const auto &kv : tag_state_dof_map) */
-            /* { */
-            /*     // Assume all dof vectors are of equal size. Anything else is a bug! */
-            /*     for (size_t dof_counter = 0; dof_counter < kv.second[0].size(); ++dof_counter) */
-            /*     { */
-            /*         // Assume MPI will distribute vector respecting function space dimension */
-            /*         // Fill values from `state` into `u_prev`. */
-            /*         for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter) */
-            /*         { */
-            /*             u_prev[state_counter] = state[kv.second[state_counter][dof_counter]]; */
-            /*         } */
-
-            /*         forward_euler(const_stepper, ode_map[kv.first], u_prev, t0, t1, dt); */
-
-            /*         // Fill values from `u_prev` into `State`. My custom odesolver requires u and u_prev */
-            /*         for (int state_counter = 0; state_counter < num_sub_spaces; ++state_counter) */
-            /*         { */
-            /*             VecSetValue(state.vec(), kv.second[state_counter][dof_counter], */
-            /*                     u_prev[state_counter], INSERT_VALUES); */
-            /*         } */
-            /*     } */
-            /* } */
+            state.set_local(local_state);
         }
 
     private:
-        MeshFunction< size_t > vertex_function;
-        /* std::map< int, std::shared_ptr< Cressman > > rhs_map; */
-        std::map< int, std::shared_ptr< ODEBase > > rhs_map;
+        PETScVector indicator_function;
         int num_sub_spaces;
-
-        // cell_tag -> state variables -> dofs
-        std::map< int, std::vector< std::vector < size_t > > > tag_state_dof_map;
 
         // Ode stepper
         modified_midpoint< std::vector< double > > const_stepper;
 
         std::map< int, std::shared_ptr< ODEBase > > ode_map;
-
-        std::vector< size_t > dof_cell_vector;
+        /* std::vector< double > u_prev; */
 };
 
 
@@ -414,9 +342,8 @@ PYBIND11_MODULE(SIGNATURE, m) {
 
     py::class_< ODESolverVectorisedSubDomain >(m, "LatticeODESolver")
         .def(py::init<
-                std::shared_ptr< const FunctionSpace >&,
-                const std::vector< size_t > &,
-                ODEMap &>())
+                ODEMap &,
+                int >())
         .def("solve", &ODESolverVectorisedSubDomain::solve);
 
     // m.def("filter_dofs", &filter_dofs);
