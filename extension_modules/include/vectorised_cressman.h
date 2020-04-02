@@ -44,13 +44,13 @@ class ODEMap
 {
     public:
         template <typename ode_type >
-        void add_ode(int key, ode_type &ode)
+        void add_ode(size_t key, ode_type &ode)
         {
             ode_map.emplace(std::make_pair(key, ode.clone()));
             cell_tags.emplace_back(key);
         }
 
-        std::map< int, std::shared_ptr< ODEBase > > get_map()
+        std::map< size_t, std::shared_ptr< ODEBase > > get_map()
         {
             return ode_map;
         }
@@ -62,7 +62,7 @@ class ODEMap
 
     private:
         std::vector< size_t > cell_tags;
-        std::map< int, std::shared_ptr< ODEBase > > ode_map;
+        std::map< size_t, std::shared_ptr< ODEBase > > ode_map;
 };
 
 
@@ -178,7 +178,7 @@ void assign_vector(
         const std::vector< size_t > &cell_function,
         const FunctionSpace &mixed_function_space)
 {
-    const auto num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
+    const size_t num_sub_spaces = mixed_function_space.element().get()->num_sub_elements();
     assert(false);
 
     // Store keys in separate vector
@@ -214,7 +214,7 @@ class ODESolverVectorisedSubDomain
                 int num_sub_spaces) : num_sub_spaces(num_sub_spaces)
         {
             ode_map = ode_container.get_map();
-            /* u_prev = std::vector< double >(num_sub_spaces); */
+            u_prev = std::vector< double >(num_sub_spaces);
         }
 
         void solve(
@@ -223,25 +223,17 @@ class ODESolverVectorisedSubDomain
                 const double t0,
                 const double t1,
                 const double dt,
-                const PETScVector &indicator_function)
+                PETScVector &indicator_function)
         {
             // TODO: allocate in constructor
+            /* std::vector< double > u_prev(num_sub_spaces); */
+            /* std::vector< double > u(num_sub_spaces); */
+            std::vector< double > local_state;
+            std::vector< double > local_indicator;
 
-            std::vector< double > u_prev(num_sub_spaces);
-            std::vector< double > u(num_sub_spaces);
-            std::vector< double > local_state, local_indicator;
             state.get_local(local_state);
             indicator_function.get_local(local_indicator);
 
-            const auto indicator_size = indicator_function.local_size();
-            /* std::cout << "indicator size: " << indicator_size << std::endl; */
-            /* std::cout << local_state.size() / num_sub_spaces << std::endl; */
-            /* std::cout << indicator_range.first << " --- " << indicator_range.first / num_sub_spaces << std::endl; */
-            /* std::cout << indicator_range.second << " --- " << indicator_range.second / num_sub_spaces << std::endl; */
-            /* std::cout << std::endl; */
-
-            /* const auto indicator_local_range = indicator_function.local_range(); */
-            /* auto indicator_counter = indicator_local_range.first; */
             size_t indicator_counter = 0;
             size_t dof_index = 0;
             while (dof_index < local_state.size())
@@ -252,12 +244,11 @@ class ODESolverVectorisedSubDomain
                     u_prev[sub_space_index] = local_state[dof_index + sub_space_index];
                 }
 
-                /* auto const cell_tag = indicator_function[indicator_counter++]; */
-                auto const cell_tag = local_indicator[indicator_counter++];
+                size_t cell_tag = static_cast< size_t >(local_indicator[indicator_counter++]);
                 forward_euler(const_stepper, ode_map[cell_tag], u_prev, t0, t1, dt);
 
                 for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
-                    local_state[dof_index + sub_space_index] = u[sub_space_index];
+                    local_state[dof_index + sub_space_index] = u_prev[sub_space_index];
 
                 dof_index += num_sub_spaces;
             }
@@ -271,8 +262,8 @@ class ODESolverVectorisedSubDomain
         // Ode stepper
         modified_midpoint< std::vector< double > > const_stepper;
 
-        std::map< int, std::shared_ptr< ODEBase > > ode_map;
-        /* std::vector< double > u_prev; */
+        std::map< size_t, std::shared_ptr< ODEBase > > ode_map;
+        std::vector< double > u_prev;
 };
 
 
