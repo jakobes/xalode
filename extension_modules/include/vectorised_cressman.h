@@ -290,6 +290,7 @@ void test_vector(std::vector< size_t > foo)
 PYBIND11_MODULE(SIGNATURE, m) {
     py::class_< ODEMap >(m, "ODEMap")
         .def(py::init<>())
+        .def("get_tags", &ODEMap::get_tags)
         .def("add_ode", &ODEMap::add_ode< Cressman >)
         .def("add_ode", &ODEMap::add_ode< Fitzhugh >)
         .def("add_ode", &ODEMap::add_ode< MorrisLecar >);
