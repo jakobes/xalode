@@ -260,7 +260,8 @@ class ODESolverVectorisedSubDomain
         int num_sub_spaces;
 
         // Ode stepper
-        modified_midpoint< std::vector< double > > const_stepper;
+        /* modified_midpoint< std::vector< double > > const_stepper; */
+        runge_kutta4< std::vector< double > > const_stepper;
 
         std::map< size_t, std::shared_ptr< ODEBase > > ode_map;
         std::vector< double > u_prev;
@@ -292,6 +293,7 @@ PYBIND11_MODULE(SIGNATURE, m) {
         .def(py::init<>())
         .def("get_tags", &ODEMap::get_tags)
         .def("add_ode", &ODEMap::add_ode< Cressman >)
+        .def("add_ode", &ODEMap::add_ode< SimpleODE >)
         .def("add_ode", &ODEMap::add_ode< Fitzhugh >)
         .def("add_ode", &ODEMap::add_ode< MorrisLecar >);
 
@@ -328,6 +330,9 @@ PYBIND11_MODULE(SIGNATURE, m) {
               py::arg("v_peak") = 40);
         // There is some skullduggery with virtual functions. Trampoline classes?
         /* .def("eval", Fitzhugh::eval); */
+
+    py::class_< SimpleODE >(m, "SimpleODE")
+        .def(py::init< >());
 
     py::class_< MorrisLecar >(m, "MorrisLecar")
         .def(py::init<double>(), py::arg("Iext") = 40);
