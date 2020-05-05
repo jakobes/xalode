@@ -66,7 +66,6 @@ class ODEMap
 };
 
 
-
 index_map new_and_improved_dof_filter(
         std::shared_ptr< const GenericDofMap > dofmap,
         const std::vector< size_t > cell_function,
@@ -225,9 +224,6 @@ class ODESolverVectorisedSubDomain
                 const double dt,
                 PETScVector &indicator_function)
         {
-            // TODO: allocate in constructor
-            /* std::vector< double > u_prev(num_sub_spaces); */
-            /* std::vector< double > u(num_sub_spaces); */
             std::vector< double > local_state;
             std::vector< double > local_indicator;
 
@@ -238,18 +234,23 @@ class ODESolverVectorisedSubDomain
             size_t dof_index = 0;
             while (dof_index < local_state.size())
             {
+                size_t cell_tag = static_cast< size_t >(local_indicator[indicator_counter++]);
+                // If map contains key
+                if (ode_map.count(cell_tag) != 0)
+                {
+
                 // Move variables from state to u_prev
                 for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
                 {
                     u_prev[sub_space_index] = local_state[dof_index + sub_space_index];
                 }
 
-                size_t cell_tag = static_cast< size_t >(local_indicator[indicator_counter++]);
                 forward_euler(const_stepper, ode_map[cell_tag], u_prev, t0, t1, dt);
 
                 for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
                     local_state[dof_index + sub_space_index] = u_prev[sub_space_index];
 
+                }
                 dof_index += num_sub_spaces;
             }
             state.set_local(local_state);
