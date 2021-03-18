@@ -77,8 +77,9 @@ _MODULE_CACHE.add_module(
         "fitzhugh.h",
         "morris_lecar.h",
         "forward_euler.h",
-        "vectorised_cressman.h",
         "synaptic.h",
+    ] + [
+            "vectorised_cressman.h",        # Extrmely hackish, but vectorised cressman must be last
     ]
 )
 _MODULE_CACHE.add_module("Noble", ["noble.h"])
