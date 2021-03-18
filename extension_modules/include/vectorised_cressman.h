@@ -317,6 +317,7 @@ PYBIND11_MODULE(SIGNATURE, m) {
         .def("get_tags", &ODEMap::get_tags)
         .def("add_ode", &ODEMap::add_ode< Cressman >)
         .def("add_ode", &ODEMap::add_ode< SimpleODE >)
+        .def("add_ode", &ODEMap::add_ode< NoCellModel >)
         .def("add_ode", &ODEMap::add_ode< Fitzhugh >)
         .def("add_ode", &ODEMap::add_ode< MorrisLecar >)
         .def("add_ode", &ODEMap::add_ode< Synaptic >);
@@ -356,6 +357,9 @@ PYBIND11_MODULE(SIGNATURE, m) {
         /* .def("eval", Fitzhugh::eval); */
 
     py::class_< SimpleODE >(m, "SimpleODE")
+        .def(py::init< >());
+
+    py::class_< NoCellModel >(m, "NoCellModel")
         .def(py::init< >());
 
     py::class_< Synaptic >(m, "Synaptic")

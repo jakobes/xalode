@@ -78,6 +78,7 @@ _MODULE_CACHE.add_module(
         "morris_lecar.h",
         "forward_euler.h",
         "synaptic.h",
+        "nocellmodel.h",
     ] + [
             "vectorised_cressman.h",        # Extrmely hackish, but vectorised cressman must be last
     ]
