@@ -12,7 +12,7 @@ class Synaptic: public ODEBase
     public:
         typedef std::vector< double > vector_type;
 
-        Synaptic(double Iext = 40.0) : Iext(Iext) {}
+        Synaptic() {}
 
         std::shared_ptr< ODEBase > clone() const override
         {
