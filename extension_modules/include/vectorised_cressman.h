@@ -358,6 +358,9 @@ PYBIND11_MODULE(SIGNATURE, m) {
     py::class_< SimpleODE >(m, "SimpleODE")
         .def(py::init< >());
 
+    py::class_< Synaptic >(m, "Synaptic")
+        .def(py::init< >());
+
     py::class_< MorrisLecar >(m, "MorrisLecar")
         .def(py::init<double>(), py::arg("Iext") = 40);
 
