@@ -46,8 +46,8 @@ class Synaptic : public ODEBase
         double tau_s = 100; // ms
         double tau_x = 2;   // ms
         double alpha_s = 0.5;   // kHz
-        double V_threshold = 10;        // Specific value should not matter much
-        double V_syn = 0;
+        double V_threshold = 0;        // Specific value should not matter much
+        double V_syn = -67.0340802;     // Same as the stable inbitial conditions used in Cressman
 };
 
 #endif
