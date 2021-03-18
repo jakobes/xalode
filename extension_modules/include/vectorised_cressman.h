@@ -318,7 +318,7 @@ PYBIND11_MODULE(SIGNATURE, m) {
         .def("add_ode", &ODEMap::add_ode< Cressman >)
         .def("add_ode", &ODEMap::add_ode< SimpleODE >)
         .def("add_ode", &ODEMap::add_ode< Fitzhugh >)
-        .def("add_ode", &ODEMap::add_ode< MorrisLecar >);
+        .def("add_ode", &ODEMap::add_ode< MorrisLecar >)
         .def("add_ode", &ODEMap::add_ode< Synaptic >);
 
     py::class_< Cressman >(m, "Cressman")
