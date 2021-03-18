@@ -17,7 +17,7 @@ class NoCellModel : public ODEBase
 
         NoCellModel() {}
 
-    std::shared_ptr< NoCellModel > clone() const override
+    std::shared_ptr< ODEBase > clone() const override
     {
         return std::make_shared< NoCellModel >(*this);
     }
