@@ -224,11 +224,16 @@ class ODESolverVectorisedSubDomain
                 const double dt,
                 PETScVector &indicator_function)
         {
+            assert(false);
+            /* std::vector< double > u(num_sub_spaces); */
             std::vector< double > local_state;
             std::vector< double > local_indicator;
+            std::cout << "foooo" << std::endl;
 
             state.get_local(local_state);
             indicator_function.get_local(local_indicator);
+
+            bool looog = true;
 
             size_t indicator_counter = 0;
             size_t dof_index = 0;
@@ -238,6 +243,23 @@ class ODESolverVectorisedSubDomain
                 // If map contains key
                 if (ode_map.count(cell_tag) != 0)
                 {
+
+
+                if (looog)
+                {
+                    size_t jj = dof_index / 2;
+                    std::cout <<
+                        local_state.size() << " " <<
+                        local_state[jj + 0] << " " <<
+                        local_state[jj + 1] << " " <<
+                        local_state[jj + 2] << " " <<
+                        local_state[jj + 3] << " " <<
+                        local_state[jj + 4] << " " <<
+                        local_state[jj + 5] << " " <<
+                        local_state[jj + 6] << " " <<
+                        std::endl;
+                    looog = false;
+                }
 
                 // Move variables from state to u_prev
                 for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
