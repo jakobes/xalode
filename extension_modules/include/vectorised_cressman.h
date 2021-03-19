@@ -228,7 +228,6 @@ class ODESolverVectorisedSubDomain
             /* std::vector< double > u(num_sub_spaces); */
             std::vector< double > local_state;
             std::vector< double > local_indicator;
-            std::cout << "foooo" << std::endl;
 
             state.get_local(local_state);
             indicator_function.get_local(local_indicator);
