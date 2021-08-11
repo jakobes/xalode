@@ -243,33 +243,16 @@ class ODESolverVectorisedSubDomain
                 if (ode_map.count(cell_tag) != 0)
                 {
 
+                    // Move variables from state to u_prev
+                    for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
+                    {
+                        u_prev[sub_space_index] = local_state[dof_index + sub_space_index];
+                    }
 
-                if (looog)
-                {
-                    size_t jj = dof_index / 2;
-                    std::cout <<
-                        local_state.size() << " " <<
-                        local_state[jj + 0] << " " <<
-                        local_state[jj + 1] << " " <<
-                        local_state[jj + 2] << " " <<
-                        local_state[jj + 3] << " " <<
-                        local_state[jj + 4] << " " <<
-                        local_state[jj + 5] << " " <<
-                        local_state[jj + 6] << " " <<
-                        std::endl;
-                    looog = false;
-                }
+                    forward_euler(const_stepper, ode_map[cell_tag], u_prev, t0, t1, dt);
 
-                // Move variables from state to u_prev
-                for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
-                {
-                    u_prev[sub_space_index] = local_state[dof_index + sub_space_index];
-                }
-
-                forward_euler(const_stepper, ode_map[cell_tag], u_prev, t0, t1, dt);
-
-                for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
-                    local_state[dof_index + sub_space_index] = u_prev[sub_space_index];
+                    for (size_t sub_space_index = 0; sub_space_index < num_sub_spaces; ++sub_space_index)
+                        local_state[dof_index + sub_space_index] = u_prev[sub_space_index];
 
                 }
                 dof_index += num_sub_spaces;
